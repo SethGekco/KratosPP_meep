@@ -24,6 +24,7 @@
 #include <Ext/Common/ExpandAnimsManager.h>
 #include <Ext/ObjectType/AttachEffect.h>
 #include <Ext/TechnoType/AutoFireAreaWeapon.h>
+#include <Ext/TechnoType/JumpjetCarryall.h>
 #include <Ext/TechnoType/TechnoStatus.h>
 
 #include <Ext/TechnoType/SelectWeaponData.h>
@@ -1039,6 +1040,31 @@ DEFINE_HOOK(0x54D600, JumpjetLocomotionClass_MovingUpdate_DontTurnInCell, 0x6)
 				// 强制转换Mission
 				pTechno->QueueMission(Mission::Guard, false);
 			}
+
+			// 确保即便在 Phobos 更改后只要处于 Unload 任务必然能够执行降落
+			if (pTechno->CurrentMission == Mission::Unload)
+			{
+				bool allowFall = true;
+				if (JumpjetCarryall* jjCarryall = GetScript<TechnoExt, JumpjetCarryall>(pTechno))
+				{
+					allowFall = !jjCarryall->InMission();
+				}
+
+				if (allowFall)
+				{
+					if (TechnoStatus* status = GetStatus<TechnoExt, TechnoStatus>(pTechno))
+					{
+						status->BalloonFall = true;
+					}
+
+					// 下降状态
+					if (pJJ->State != JumpjetLocomotionClass::State::Descending)
+					{
+						pJJ->State = JumpjetLocomotionClass::State::Descending;
+					}
+				}
+			}
+
 			// 垂直起降
 			GET_STACK(CoordStruct, fixPos, 0x44);
 			fixPos.X = targetPos.X;
@@ -1110,6 +1136,29 @@ DEFINE_HOOK(0x54BE6D, JumpjetLocomotionClass_Update_State2_BalloonHover, 0x6)
 	GET(JumpjetLocomotionClass*, pJJ, ESI);
 	TechnoClass* pTechno = pJJ->LinkedTo;
 	TechnoStatus* status = nullptr;
+
+	// 检查 Unload 任务
+	if (pTechno && pTechno->CurrentMission == Mission::Unload &&
+		pTechno->GetTechnoType()->BalloonHover)
+	{
+		if (TryGetStatus<TechnoExt>(pTechno, status))
+		{
+			bool allowFall = true;
+			if (JumpjetCarryall* jjCarryall = GetScript<TechnoExt, JumpjetCarryall>(pTechno))
+			{
+				allowFall = !jjCarryall->InMission();
+			}
+
+			if (allowFall)
+			{
+				status->BalloonFall = true;
+				// 强制将状态转为下降
+				pJJ->State = JumpjetLocomotionClass::State::Descending;
+				return 0x54BEA3;
+			}
+		}
+	}
+
 	if (TryGetStatus<TechnoExt>(pTechno, status) && status->BalloonFall)
 	{
 		// skip BallonHover check
@@ -1148,6 +1197,29 @@ DEFINE_HOOK(0x54C0FC, JumpjetLocomotionClass_Update_State3_BalloonHover, 0x6)
 	GET(JumpjetLocomotionClass*, pJJ, ESI);
 	TechnoClass* pTechno = pJJ->LinkedTo;
 	TechnoStatus* status = nullptr;
+
+	// 确保在初始降落被阻碍而寻找新的降落点的情况下即便在 Phobos 更改后也仍然仍可继续降落
+	if (pTechno && pTechno->CurrentMission == Mission::Unload &&
+		pTechno->GetTechnoType()->BalloonHover)
+	{
+		if (TryGetStatus<TechnoExt>(pTechno, status))
+		{
+			bool allowFall = true;
+			if (JumpjetCarryall* jjCarryall = GetScript<TechnoExt, JumpjetCarryall>(pTechno))
+			{
+				allowFall = !jjCarryall->InMission();
+			}
+
+			if (allowFall)
+			{
+				status->BalloonFall = true;
+				// BalloonHover = false
+				R->Stack(0x17, 0);
+				return 0;
+			}
+		}
+	}
+
 	if (TryGetStatus<TechnoExt>(pTechno, status) && status->BalloonFall)
 	{
 		// BalloonHover = false
