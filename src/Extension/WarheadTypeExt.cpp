@@ -1,4 +1,5 @@
 #include "WarheadTypeExt.h"
+#include <iomanip>
 
 bool WarheadTypeExt::IsDefaultArmor(std::string armor, int& index)
 {
@@ -32,11 +33,35 @@ std::string WarheadTypeExt::GetArmorValue(std::string key, std::vector<std::pair
 			{
 				// 尝试将字符串转为浮点数
 				float numericValue = std::stof(value);
-				
-				// 如果能成功转换，表示是一个有效的小数或整数，转化为百分比形式
+
+				// 如果能成功转换，表示是一个有效的小数或整数，转化为百分比形式，保留两位小数
+				// 精确的四舍五入，先将浮点数乘以100，然后四舍五入到两位小数，最后再除以100得到百分比值。
+				double precisePercent = std::round(static_cast<double>(numericValue) * 10000.0) / 100.0;
+
 				std::ostringstream percentStream;
-				percentStream << (numericValue * 100) << "%"; // 转化为百分比形式
-				return percentStream.str(); // 返回转换后的百分比字符串
+				percentStream << std::fixed << std::setprecision(2) << precisePercent << "%";
+
+				std::string result = percentStream.str(); // 转换后的百分比字符串，保留两位小数
+
+				// 清理尾随零
+				size_t dotPos = result.find('.');
+				if (dotPos != std::string::npos)
+				{
+					// 移除尾随零
+					while (result.size() > dotPos + 1 &&
+						result[result.size() - 2] == '0' &&
+						result[result.size() - 3] != '.')
+					{
+						result.erase(result.size() - 2, 1);
+					}
+					// 如果小数部分全为零，移除小数点和零
+					if (result[result.size() - 2] == '.' && result[result.size() - 3] == '0')
+					{
+						result.erase(result.size() - 3, 2);
+					}
+				}
+
+				return result;
 			}
 			catch (const std::invalid_argument&)
 			{
@@ -53,7 +78,6 @@ std::string WarheadTypeExt::GetArmorValue(std::string key, std::vector<std::pair
 	Debug::Log("Warning: Try to read Ares's [ArmorTypes] but type [%s] value is wrong.\n", key.c_str());
 	return "0%";
 }
-
 
 std::vector<std::pair<std::string, std::string>> WarheadTypeExt::GetAresArmorArray()
 {

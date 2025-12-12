@@ -305,19 +305,93 @@ public:
 		void ReadAresVersus(INIBufferReader* reader)
 		{
 			std::vector<std::pair<std::string, AresVersus>> armorValues = GetAresArmorValueArray();
-			std::string title = "Versus.";
-			for (auto it : armorValues)
+			std::vector<std::pair<std::string, std::string>> armorArray = GetAresArmorArray();
+
+			AresVersusArray.clear();
+			AresVersusArray.resize(armorValues.size());
+
+			// 为每个护甲读取值
+			for (size_t i = 0; i < armorValues.size(); ++i)
 			{
-				// 获得所有自定义护甲的信息
-				std::string armor = it.first;
-				// 护甲类型对应的比例字符串
-				AresVersus defaultValue = it.second;
-				// 实际的比例
-				AresVersus aresVersus = defaultValue;
-				// 读取弹头上的护甲设置
-				aresVersus.Read(reader, title, armor);
-				AresVersusArray.emplace_back(aresVersus);
+				const std::string& armorName = armorValues[i].first;
+				AresVersus& aresVersus = AresVersusArray[i];
+
+				// 尝试从INI读取
+				std::string key = "Versus." + armorName;
+				if (reader->TryGet(key, aresVersus.Versus))
+				{
+					// 有明确设置值
+					aresVersus.PassiveAcquire = !LESS_EQUAL(aresVersus.Versus, 0.02);
+					aresVersus.Retaliate = !LESS_EQUAL(aresVersus.Versus, 0.01);
+					aresVersus.ForceFire = !LESS_EQUAL(aresVersus.Versus, 0.00);
+				}
+				else
+				{
+					// 没有明确设置值，需要根据引用关系确定
+					const std::string& targetName = armorArray[i].second;
+
+					// 检查引用的是什么
+					int defaultIndex = 0;
+					if (IsDefaultArmor(targetName, defaultIndex))
+					{
+						// 引用默认护甲，使用弹头对默认护甲的值
+						if (defaultIndex >= 0 && defaultIndex < (int)Versus.size())
+						{
+							aresVersus.Versus = Versus[defaultIndex];
+						}
+						else
+						{
+							aresVersus.Versus = 1.0;
+						}
+					}
+					else
+					{
+						// 引用其他自定义护甲，查找那个护甲的值
+						bool found = false;
+						for (size_t j = 0; j < armorArray.size(); ++j)
+						{
+							if (armorArray[j].first == targetName)
+							{
+								aresVersus = AresVersusArray[j]; // 继承值
+								found = true;
+								break;
+							}
+						}
+						if (!found)
+						{
+							aresVersus.Versus = 1.0;
+						}
+					}
+
+					// 设置标志位
+					aresVersus.PassiveAcquire = !LESS_EQUAL(aresVersus.Versus, 0.02);
+					aresVersus.Retaliate = !LESS_EQUAL(aresVersus.Versus, 0.01);
+					aresVersus.ForceFire = !LESS_EQUAL(aresVersus.Versus, 0.00);
+				}
+
+				// 读取覆盖标志
+				aresVersus.ForceFire = reader->Get("Versus." + armorName + ".ForceFire", aresVersus.ForceFire);
+				aresVersus.Retaliate = reader->Get("Versus." + armorName + ".Retaliate", aresVersus.Retaliate);
+				aresVersus.PassiveAcquire = reader->Get("Versus." + armorName + ".PassiveAcquire", aresVersus.PassiveAcquire);
 			}
+#ifdef DEBUG
+			// 输出调试信息
+			Debug::Log("%s Versus values:\n", reader->Section.c_str());
+			for (size_t i = 0; i < Versus.size(); ++i)
+			{
+				Armor armor = (Armor)i;
+				const std::string& name = GetArmorName(armor);
+				Debug::Log("  %d - %s: %.2f\n", i, name.c_str(), Versus[i]);
+			}
+			Debug::Log("%s AresVersus values:\n", reader->Section.c_str());
+			for (size_t i = 0; i < armorValues.size(); ++i)
+			{
+				const std::string& name = armorValues[i].first;
+				const AresVersus& value = AresVersusArray[i];
+				Debug::Log("  %d - %s: %.2f, %d, %d, %d\n",
+					i + 11, name.c_str(), value.Versus, value.ForceFire, value.Retaliate, value.PassiveAcquire);
+			}
+#endif // DEBUG
 		}
 	};
 
