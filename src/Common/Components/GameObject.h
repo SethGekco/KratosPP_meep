@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <list>
 #include <vector>
@@ -14,28 +14,60 @@ class GameObject : public Component
 public:
 	DECLARE_COMPONENT(GameObject, Component);
 
-	bool ExtChanged = false;
-
-#ifdef DEBUG_COMPONENT
 	virtual ~GameObject() override
 	{
-		Debug::Log("GameObject [%s]%s is release.\n", this->thisName.c_str(), this->thisId.c_str());
+		LOG_COMPONENT("GameObject %s destructor called.\n", thisName.c_str());
+		// 不自动调用EnsureDestroy，信任外部管理
 	}
-#endif // DEBUG
+
+	// 特别处理 GameObject 的销毁
+	void EnsureDestroy()
+	{
+		if (IsDisabling()) {
+			return;
+		}
+
+#ifdef DEBUG_COMPONENT
+		LOG_COMPONENT("=== GameObject::EnsureDestroy START ===\n");
+		LOG_COMPONENT("GameObject %s has %d children:\n", thisName.c_str(), _children.size());
+		for (Component* child : _children)
+		{
+			LOG_COMPONENT("  - [%s]%p\n", child->Name.c_str(), child);
+		}
+#endif
+
+		// 调用父类的EnsureDestroy
+		Component::EnsureDestroy();
+
+		LOG_COMPONENT("=== GameObject::EnsureDestroy END ===\n");
+	}
+
+	bool ExtChanged = false;
 
 	virtual void Clean() override
 	{
 		Component::Clean();
+		ExtChanged = false;
 	};
 
 	GameObject* GetAwaked()
 	{
+		// 如果已经唤醒，则直接返回this
+		if (IsAwaked()) {
+			return this;
+		}
+
+		// 如果没有唤醒，则调用EnsureAwaked()来尝试唤醒并返回this
 		EnsureAwaked();
 		return this;
 	}
 
 	virtual void OnForeachEnd() override
 	{
+		// 清理所有Disabling状态的组件
+		ClearDisableComponent();
+
+		// 通知所有子组件扩展数据已更改
 		if (ExtChanged)
 		{
 			ExtChanged = false;

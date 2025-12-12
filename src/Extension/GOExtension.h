@@ -19,17 +19,17 @@ public:
 	class ExtData : public Extension<TBase>, public IExtData
 	{
 	public:
-#ifdef DEBUG
+
 		std::string thisId{};
 		std::string thisName{};
 
 		std::string baseId{};
 		std::string baseName{};
-#endif // DEBUG
+
 
 		ExtData(TBase* OwnerObject) : Extension<TBase>(OwnerObject)
 		{
-#ifdef DEBUG
+			// 传递调试信息给GameObject，以便日志使用
 			char t_this[1024];
 			sprintf_s(t_this, "%p", this);
 			this->thisId = { t_this };
@@ -46,10 +46,11 @@ public:
 			m_GameObject.extName = this->thisName;
 			m_GameObject.baseId = this->baseId;
 			m_GameObject.baseName = this->baseName;
-#endif // DEBUG
+
 			// 为了保证读存档的key一致，除GO外都不进行实例化
 			m_GameObject.Tag = typeid(TExt).name();
 			m_GameObject.SetExtData(this);
+
 			// 附加Components但是不激活
 			// 不从存档读入时，首次唤醒GameObject时激活所有的Components
 			// 从存档读入时，Component的标记_awaked被读入，不会重复激活
@@ -61,13 +62,10 @@ public:
 			try
 			{
 #ifdef DEBUG_COMPONENT
-				Debug::Log("[%s]%s [%s]%s  calling GameObject [%s]%d destroy all component.\n", this->thisName.c_str(), this->thisId.c_str(), this->baseName.c_str(), this->baseId.c_str(), m_GameObject.thisName.c_str(), &m_GameObject);
+				Debug::Log("[%s]%s [%s]%s  calling GameObject %s destroy all component.\n", this->thisName.c_str(), this->thisId.c_str(), this->baseName.c_str(), this->baseId.c_str(), m_GameObject.thisName.c_str());
 #endif // DEBUG
-				// delete *m_GameObject;
-				m_GameObject.ForeachChild([](Component* c)
-					{
-						c->EnsureDestroy();
-					}, true);
+				// 销毁 GameObject 本身（它会自动销毁所有子组件）
+				m_GameObject.EnsureDestroy();
 			}
 			catch (const std::exception& e)
 			{
@@ -90,12 +88,15 @@ public:
 		{
 			// 首先读取ext
 			Extension<TBase>::LoadFromStream(stream);
+
 #ifdef DEBUG_COMPONENT
-			Debug::Log("[%s]%s [%s]%s GameObject [%s]%s Load from stream.\n", this->thisName.c_str(), this->thisId.c_str(), this->baseName.c_str(), this->baseId.c_str(), m_GameObject.thisName.c_str(), m_GameObject.thisId.c_str());
+			Debug::Log("[%s]%s [%s]%s GameObject %s Load from stream.\n", this->thisName.c_str(), this->thisId.c_str(), this->baseName.c_str(), this->baseId.c_str(), m_GameObject.thisName.c_str());
 #endif // DEBUG
+
 			// 读取GameObject，由GameObject自身清理不用的Component，再读入存档
 			this->Serialize(stream);
 		}
+
 		virtual void SaveToStream(ExStreamWriter& stream) override
 		{
 			Extension<TBase>::SaveToStream(stream);
@@ -112,8 +113,8 @@ public:
 		__declspec(property(get = GetGameObject)) GameObject* _GameObject;
 
 		/// @brief Helper调用，通过Ext查找或附加GameObject下的脚本
-		/// @tparam TScript 
-		/// @return 
+		/// @tparam TScript
+		/// @return
 		template <typename TScript>
 		TScript* FindOrAttach()
 		{
@@ -121,8 +122,8 @@ public:
 		}
 
 		/// @brief Helper调用，通过Ext查找GameObject下的脚本
-		/// @tparam TScript 
-		/// @return 
+		/// @tparam TScript
+		/// @return
 		template <typename TScript>
 		TScript* GetScript()
 		{
@@ -165,12 +166,23 @@ public:
 		virtual void AttachComponents() override
 		{
 #ifdef DEBUG_COMPONENT
+			static int callCount = 0;
+			callCount++;
+			Debug::Log("[%s] AttachComponents called #%d, globalScriptsCreated=%d, this=%p\n",
+				typeid(TExt).name(), callCount, globalScriptsCreated, this);
+
 			Debug::Log("[%s]%s [%s]%s call AttachComponents\n", this->thisName.c_str(), this->thisId.c_str(), this->baseName.c_str(), this->baseId.c_str());
 #endif // DEBUG
+
 			if (globalScriptsCreated)
 			{
+#ifdef DEBUG_COMPONENT
+				Debug::Log("[%s] AttachComponents skipped (already created)\n",
+						typeid(TExt).name());
+#endif
 				return;
 			}
+
 			// Search and instantiate global script objects in TechnoExt
 			std::list<std::string> globalScripts{};
 

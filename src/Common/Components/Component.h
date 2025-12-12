@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <functional>
 #include <typeinfo>
@@ -6,45 +6,82 @@
 #include <algorithm>
 #include <vector>
 #include <list>
+#include <set>
+#include <memory>
+#include <type_traits>
+#include <atomic>
 
 #include <Common/EventSystems/EventSystem.h>
 
 #include <Utilities/Stream.h>
 #include <Utilities/Debug.h>
+#include <iterator>
+
+#include "ComponentPool.h"
+
+#ifdef DEBUG
+#define LOG_DEBUG(pFormat, ...) Debug::Log(pFormat, __VA_ARGS__)
+#else
+#define LOG_DEBUG(pFormat, ...)
+#endif
+
+#ifdef DEBUG_COMPONENT
+#define LOG_COMPONENT(pFormat, ...) Debug::Log(pFormat, __VA_ARGS__)
+#else
+#define LOG_COMPONENT(pFormat, ...)
+#endif
 
 #define DECLARE_COMPONENT(CLASS_NAME, ...) \
 	CLASS_NAME() : __VA_ARGS__() \
 	{ \
 		this->Name = ScriptName; \
+		LOG_COMPONENT("Component %s is created.\n\n", thisName.c_str()); \
 	} \
 	\
 	virtual void FreeComponent() override \
 	{ \
-		Clean(); \
-		Pool.push_back(this); \
+		ComponentPool::GetInstance().Release(this); \
 	} \
 	\
 	static Component* Create() \
 	{ \
-		Component* c = nullptr; \
-		if (!Pool.empty()) \
-		{ \
-			auto it = Pool.begin(); \
-			c = *it; \
-			Pool.erase(it); \
-		} \
-		if (!c) \
-		{ \
-			c = static_cast<Component*>(new CLASS_NAME()); \
-		} \
-		return c; \
+		return ComponentPool::GetInstance().Acquire<CLASS_NAME>(); \
 	} \
+	\
+	virtual Component* Clone() const override \
+	{ \
+		CLASS_NAME* clone = ComponentPool::GetInstance().Acquire<CLASS_NAME>(); \
+		if (clone) \
+		{ \
+			clone->CopyFrom(*this); \
+		} \
+		else \
+		{ \
+			Debug::Log("Error: Failed to clone component %s\n", ScriptName.c_str()); \
+		} \
+		return clone; \
+	} \
+	\
+	virtual void CopyFrom(const Component& other) override \
+	{ \
+		Component::CopyFrom(other); \
+		const CLASS_NAME* otherDerived = dynamic_cast<const CLASS_NAME*>(&other); \
+		if (otherDerived) \
+		{ \
+			CopyDerivedFrom(*otherDerived); \
+		} \
+	} \
+	\
+	virtual void CopyDerivedFrom(const CLASS_NAME& other) {} \
 	\
 	inline static std::string ScriptName = #CLASS_NAME; \
 	\
-	inline static int g_temp_##CLASS_NAME = ComponentFactory::GetInstance().Register(#CLASS_NAME, CLASS_NAME::Create); \
-	\
-	inline static std::vector<CLASS_NAME*> Pool{}; \
+	static int RegisterComponent() \
+	{ \
+		return ComponentFactory::GetInstance().Register(#CLASS_NAME, CLASS_NAME::Create); \
+	} \
+	inline static int g_temp_##CLASS_NAME = RegisterComponent(); \
+
 
 class IExtData
 {
@@ -101,12 +138,86 @@ public:
 class Component : public IComponent
 {
 public:
+	// 状态机状态，用于控制组件的生命周期。
+	enum class ComponentState : uint8_t {
+		Uninitialized 	= 0,  // 未初始化（刚创建或Clean后），对应 _awaked = false
+		Active			= 1,  // 激活状态（已Awake，且未禁用），对应 _awaked = true, _disable = false
+		Disabling		= 2   // 正在禁用（已Awake，但被标记为disable），对应 _awaked = true, _disable = true
+		// - Initializing状态可以通过_awaked和m_State的组合判断
+		// - Destroyed状态由_disable和对象池管理
+	};
+
+	Component()
+	{
+		GenerateInstanceId();
+	}
+
+	virtual ~Component() override
+	{
+
+		LOG_COMPONENT("Component %s is release.\n\n", thisName.c_str());
+
+		// 如果还有父组件，说明没有正确从父组件移除
+		if (_parent)
+		{
+			Debug::Log("CRITICAL: Component [%s] still has parent [%s] during destruction!\n",
+				Name.c_str(), _parent->Name.c_str());
+		}
+
+		// 确保所有子组件已经被清理
+		// 在正常流程中，子组件应该已经在 EnsureDestroy 或 DestroyChildComponents 中处理了
+		// 如果还有子组件，说明没有正确销毁子组件
+		if (!_children.empty())
+		{
+			Debug::Log("Error: Component [%s] still has %d children during destruction!\n",
+					Name.c_str(), _children.size());
+
+			// 紧急清理（直接回收，不触发事件）
+			while (!_children.empty())
+			{
+				// 弹出最后一个
+				Component* c = _children.back();
+				_children.pop_back();
+				// 销毁
+				c->_parent = nullptr; // 移除父子关系
+				c->_disable = true; // 标记为已销毁
+
+				// 直接返回对象池，不触发事件
+				c->FreeComponent();
+			}
+			_children.clear();
+		}
+	}
+
+	std::string InstanceId; // 实例ID，用于读存档时使用，用于区分同名组件
+
 	std::string Name;
 	std::string Tag;
 
-#ifdef DEBUG
-	std::string thisId{};
-	std::string GetThisName() { return Name; }
+	// 生成实例ID
+	void GenerateInstanceId()
+	{
+		if (InstanceId.empty())
+		{
+			static std::atomic<uint64_t> nextId{ 1 };
+			uint64_t id = nextId.fetch_add(1);
+			char buffer[64];
+			sprintf_s(buffer, "%llu", id);
+			InstanceId = buffer;
+		}
+	}
+
+	std::string GetThisName() const
+	{
+		char buff[1024];
+
+		// 安全地获取字符串
+		const char* name = Name.empty() ? "Unnamed" : Name.c_str();
+		const char* id = InstanceId.empty() ? "NoID" : InstanceId.c_str();
+
+		sprintf_s(buff, "[%s]%p#%s", name, this, id);
+		return buff;
+	}
 	__declspec(property(get = GetThisName)) std::string thisName;
 
 	std::string extId{};
@@ -114,111 +225,49 @@ public:
 
 	std::string baseId{};
 	std::string baseName{};
-#endif // DEBUG
 
-#ifdef DEBUG_COMPONENT
-	virtual ~Component() override
-	{
-		char t_this[1024];
-		sprintf_s(t_this, "%p", this);
-		std::string thisId2 = { t_this };
-		Debug::Log("Component [%s]%s - %s is release.\n\n", thisName.c_str(), thisId.c_str(), thisId2.c_str());
-	}
-#endif // DEBUG
-
+	// 设置扩展数据
 	void SetExtData(IExtData* extData);
-
-	virtual void Clean() override
-	{
-		// Ext由ScriptFactory传入
-		_extData = nullptr;
-
-		_awaked = false; // 已经完成初始化
-		_disable = false; // 已经失效，等待移除
-		_active = true; // 可以执行循环
-
-		_break = false; // 中断上层循环
-
-		// 添加的Component名单，在存档时生成
-		_childrenNames.clear();
-
-		_parent = nullptr;
-		_children.clear();
-	}
 
 	virtual void OnUpdate() override;
 
-	void EnsureAwaked();
-	void EnsureDestroy();
+#pragma region status
+	// 状态映射：
+	// Uninitialized:	_awaked = false,_disable = false
+	// Awaked:			_awaked = true,	_disable = false
+	// Disabling:		_awaked = true,	_disable = true
+
+	// 状态查询辅助方法
+	bool IsUninitialized() const { return !_awaked; } // 未初始化
+	bool IsAwaked() const { return _awaked && !_disable; } // 已激活
+	bool IsDisabling() const { return _disable; } // 正在销毁
+	bool IsEnable() const { return !_disable; } // 启用状态
 
 	/// <summary>
-	/// 重置组件，返回对象池
+	/// 唤醒组件，进入可用状态，包括子组件
 	/// </summary>
-	virtual void FreeComponent() = 0;
-
-	bool AlreadyAwake();
-
+	void EnsureAwaked();
+	/// <summary>
+	/// 销毁组件，释放资源，返回对象池
+	/// </summary>
+	void EnsureDestroy();
 	/// <summary>
 	/// 关闭组件，标记为失效，组件会在执行完Foreach后被移除
 	/// </summary>
 	void Disable();
-	bool IsEnable();
-
 
 	/// <summary>
 	/// 激活组件，使其可以执行Foreach逻辑
 	/// </summary>
-	virtual void Activate();
+	virtual void Activate() { _active = true; }
 	/// <summary>
 	/// 失活组件，使其跳过执行Foreach逻辑
 	/// </summary>
-	virtual void Deactivate();
-	virtual bool IsActive();
+	virtual void Deactivate() { _active = false; }
+	virtual bool IsActive() { return _active; }
+#pragma endregion
 
-	/// <summary>
-	/// 将Component加入子列表，同时赋予自身储存的IExtData
-	/// </summary>
-	void AddComponent(Component* component, int index = -1);
-
-	Component* AddComponent(const std::string& name, int index = -1);
-
-	Component* FindOrAllocate(const std::string& name);
-
-	template <typename TScript>
-	TScript* FindOrAttach()
-	{
-		return static_cast<TScript*>(FindOrAllocate(TScript::ScriptName));
-	}
-
-	// <summary>
-	// 将Component加入子列表中移除
-	// </summary>
-	void RemoveComponent(Component* component, bool disable = true);
-
-	/// <summary>
-	/// 在结束循环后需要从_children中清理已经标记为disable的component
-	/// </summary>
-	void ClearDisableComponent();
-
-	/// <summary>
-	/// 从存档中恢复子组件列表
-	/// </summary>
-	void RestoreComponent();
-
-	void AttachToComponent(Component* component);
-	void DetachFromParent(bool disable = true);
-
-#ifdef DEBUG
-	struct ComponentState
-	{
-	public:
-		std::string Name;
-		bool Active;
-	};
-	void GetComponentStates(std::vector<ComponentState>& states, int& level);
-#endif
-
-#pragma region Foreach
+#pragma region foreach
 	/// <summary>
 	/// execute action for each components in root (include itself)
 	/// </summary>
@@ -238,7 +287,7 @@ public:
 	void ForeachLevel(F action, int& level, int& maxLevel)
 	{
 		// 执行自身
-		if (IsEnable() && IsActive())
+		if (IsAwaked() && IsActive())
 		{
 			Component* _this = this;
 			action(_this);
@@ -256,8 +305,9 @@ public:
 				}
 			}
 		}
-		// 清理失效的子模块
-		ClearDisableComponent();
+		// 注意：不在这里调用ClearDisableComponent
+		// 由GameObject的OnForeachEnd统一处理
+		// ClearDisableComponent();
 	}
 
 	/// <summary>
@@ -280,10 +330,7 @@ public:
 		}
 	}
 
-	void Break()
-	{
-		_break = true;
-	}
+	void Break() { _break = true; }
 
 	bool IsBreak()
 	{
@@ -296,59 +343,123 @@ public:
 	}
 #pragma endregion
 
-#pragma region GetComponent
-	Component* GetComponentInParentByName(const std::string& name);
+#pragma region manager
 
+	/// <summary>
+	/// 将Component加入子列表，同时赋予自身储存的IExtData
+	/// </summary>
+	void AddComponent(Component* component, int index = -1);
+
+	Component* AddComponent(const std::string& name, int index = -1);
+
+	// <summary>
+	// 将Component加入子列表中移除
+	// </summary>
+	void RemoveComponent(Component* component, bool disable = true);
+
+	/// <summary>
+	/// 在结束循环后需要从_children中清理已经标记为disable的component
+	/// </summary>
+	void ClearDisableComponent();
+
+	/// <summary>
+	/// 从存档中恢复子组件列表
+	/// </summary>
+	void RestoreComponent();
+
+
+#ifdef DEBUG
+	struct ComponentInfo
+	{
+	public:
+		std::string Name;
+		bool Active;
+	};
+	void GetComponentInfos(std::vector<ComponentInfo>& infos, int& level)
+	{
+		// 自己
+		std::string name = "";
+		if (level > 1)
+		{
+			for (int i = 0; i < level - 1; i++)
+			{
+				name.append("  ");
+			}
+		}
+		if (level > 0)
+		{
+			name.append("--");
+		}
+		name.append(this->Name);
+		if (!this->Tag.empty())
+		{
+			name.append("#").append(this->Tag);
+		}
+		ComponentInfo info{ name, IsActive() };
+		infos.push_back(info);
+		ForeachChild([&infos, &level](Component* c) {
+			int l = level + 1;
+			c->GetComponentInfos(infos, l);
+			});
+	}
+#endif
+
+	Component* GetComponentInParentByName(const std::string& name);
 	Component* GetComponentInChildrenByName(const std::string& name);
 
+	/// <summary>
+	/// 查找子组件，深度优先
+	/// </summary>
 	Component* GetComponentByName(const std::string& name);
 
 	template <typename TComponent>
 	TComponent* GetComponentInParent()
 	{
-		TComponent* c = nullptr;
-		// find first level
-		for (Component* children : _children)
+		static_assert(std::is_base_of<Component, TComponent>::value, "TComponent must inherit from Component");
+
+		if (!_parent)
 		{
-			if (typeid(*children) == typeid(TComponent))
+			return nullptr;
+		}
+
+		// 在兄弟组件中查找
+		for (Component* c : _parent->_children)
+		{
+			if (c != this)
 			{
-				c = (TComponent*)children;
-				break;
+				if (TComponent* typed = dynamic_cast<TComponent*>(c))
+				{
+					return typed;
+				}
 			}
 		}
-		if (!c && _parent)
-		{
-			c = _parent->GetComponentInParent<TComponent>();
-		}
-		return c;
+		// 在父组件的父节点中查找
+		return _parent->GetComponentInParent<TComponent>();
 	}
 
 	template <typename TComponent>
 	TComponent* GetComponentInChildren()
 	{
-		TComponent* c = nullptr;
-		// find first level
-		for (Component* children : _children)
+		static_assert(std::is_base_of<Component, TComponent>::value, "TComponent must inherit from Component");
+
+		// 在当前层级查找
+		for (Component* child : _children)
 		{
-			if (typeid(*children) == typeid(TComponent))
+			if (TComponent* typed = dynamic_cast<TComponent*>(child))
 			{
-				c = (TComponent*)children;
-				break;
+				return typed;
 			}
 		}
-		if (!c)
+		// 在子组件中查找，深度优先
+		for (Component* child : _children)
 		{
-			for (Component* children : _children)
+			Component* found = child->GetComponentInChildren<TComponent>();
+			if (found)
 			{
-				TComponent* r = children->GetComponentInChildren<TComponent>();
-				if (r)
-				{
-					c = r;
-					break;
-				}
+				return dynamic_cast<TComponent*>(found);
 			}
 		}
-		return c;
+		return nullptr;
 	}
 
 	template <typename TComponent>
@@ -357,7 +468,37 @@ public:
 		return GetComponentInChildren<TComponent>();
 	}
 
-	Component* GetParent();
+	// 父子关系
+	Component* GetParent() { return _parent; }
+	const std::vector<Component*>& GetChildren() { return _children; }
+
+	// 组件查找
+	Component* FindOrAllocate(const std::string& name);
+
+	template <typename TScript>
+	TScript* FindOrAttach()
+	{
+		static_assert(std::is_base_of<Component, TScript>::value, "TScript must inherit from Component");
+
+		// 先查找
+		TScript* found = GetComponent<TScript>();
+		if (found)
+		{
+			return dynamic_cast<TScript*>(found);
+		}
+
+		// 通过名称创建
+		const std::string& scriptName = TScript::ScriptName;
+		Component* newComponent = FindOrAllocate(scriptName);
+
+		// 安全的类型转换
+		return dynamic_cast<TScript*>(newComponent);
+	}
+
+	void AttachToComponent(Component* component);
+
+	void DetachFromParent(bool disable = true);
+
 #pragma endregion
 
 	Component& operator=(const Component& other)
@@ -366,6 +507,7 @@ public:
 		{
 			Name = other.Name;
 			Tag = other.Tag;
+
 			// 只赋值控制位，不赋值上下层关系
 			_awaked = other._awaked;
 			_disable = other._disable;
@@ -383,36 +525,82 @@ public:
 		stream
 			// 存取子组件清单
 			.Process(this->_childrenNames)
+			.Process(this->_childrenInstanceIds) // 存取子组件实例ID，用于存档时恢复
 
 			// 存取Component自身的属性
+			.Process(this->InstanceId)
 			.Process(this->Name)
 			.Process(this->Tag)
 			// 每次读档之后，所有的Component实例都是重新创建的，不从存档中读取，只获取事件控制
 			.Process(this->_awaked)
 			.Process(this->_disable)
 			.Process(this->_active)
-
 			.Process(this->_break);
 		return stream.Success();
 	}
+
 	virtual bool Load(ExStreamReader& stream, bool registerForChange) override
 	{
+		// 读取自身的属性，包括排序好的_childrenNames和_childrenInstanceIds
 		bool loaded = this->Serialize(stream, true);
-		// 根据子组件清单恢复
-		RestoreComponent();
-		// 读取每个子组件的内容
-		this->ForeachChild([&stream, &registerForChange](Component* c) { c->Load(stream, registerForChange); });
+		if (loaded)
+		{
+			// 验证数据完整性
+			if (this->_childrenNames.size() != this->_childrenInstanceIds.size())
+			{
+				Debug::Log("Error: Load failed! Children names and instance ids mismatch!");
+				return false;
+			}
+			// 根据子组件清单恢复
+			RestoreComponent();
+
+#ifdef DEBUG_COMPONENT
+		if (!this->_children.empty())
+		{
+			std::string s1 = "Saved _childrenInstanceIds: ";
+			for (Component* c : this->_children)
+			{
+				s1.append(c->InstanceId).append(", ");
+			}
+			s1.append("\n");
+			LOG_COMPONENT(s1.c_str());
+		}
+#endif
+
+			// 读取每个子组件的内容
+			this->ForeachChild([&stream, &registerForChange](Component* c) { c->Load(stream, registerForChange); });
+		}
 		return loaded;
 	}
+
 	virtual bool Save(ExStreamWriter& stream) const override
 	{
 		Component* pThis = const_cast<Component*>(this);
+
 		// 生成子组件清单
 		pThis->_childrenNames.clear();
+		pThis->_childrenInstanceIds.clear();
 		for (Component* c : pThis->_children)
 		{
-			pThis->_childrenNames.push_back(c->Name);
+			if (!c->IsDisabling())
+			{
+				pThis->_childrenNames.push_back(c->Name);
+				pThis->_childrenInstanceIds.push_back(c->InstanceId);
+			}
 		}
+
+#ifdef DEBUG_COMPONENT
+		if (!pThis->_childrenInstanceIds.empty())
+		{
+			std::string s1 = "Saved _childrenInstanceIds: ";
+			for_each(pThis->_childrenInstanceIds.begin(), pThis->_childrenInstanceIds.end(), [&](std::string& s) {
+				s1.append(s).append(", ");
+				});
+			s1.append("\n");
+			LOG_COMPONENT(s1.c_str());
+		}
+#endif
+
 		bool saved = pThis->Serialize(stream, false);
 		// 存入每个子组件的内容
 		pThis->ForeachChild([&stream](Component* c) {
@@ -422,23 +610,65 @@ public:
 	}
 #pragma endregion
 
+	// 克隆支持
+	virtual Component* Clone() const;
+	virtual void CopyFrom(const Component& other);
+
+	// 清理
+	virtual void Clean() override
+	{
+		LOG_COMPONENT("Component::Clean called for %p\n", this);
+
+		Tag.clear();
+		// 重新生成实例ID
+		InstanceId.clear();
+		GenerateInstanceId();
+
+
+		// Ext由ScriptFactory传入
+		_extData = nullptr;
+
+		_awaked = false; // 已经唤醒，可以使用
+		_disable = false; // 已经失效，等待移除
+		_active = true; // 可以执行循环
+		_break = false; // 中断上层循环
+
+		// 添加的Component名单，在存档时生成
+		_childrenNames.clear();
+
+		_parent = nullptr;
+		_children.clear();
+
+		// 清理调试信息
+		extId.clear();
+		extName.clear();
+		baseId.clear();
+		baseName.clear();
+	}
+
 protected:
+	friend class ComponentPool; // 对象池管理
+
 	// Ext由ScriptFactory传入
 	IExtData* _extData = nullptr;
 
-	bool _awaked = false; // 已经完成初始化
+	bool _awaked = false; // 已经唤醒，可以使用
 	bool _disable = false; // 已经失效，等待移除
 	bool _active = true; // 可以执行循环
-
 	bool _break = false; // 中断上层循环
 
 	// 添加的Component名单，在存档时生成
 	std::vector<std::string> _childrenNames{};
+	std::vector<std::string> _childrenInstanceIds{};
 
 	Component* _parent = nullptr;
-	std::list<Component*> _children{};
+	std::vector<Component*> _children{};
+
+	// 对象池相关
+	virtual void FreeComponent() = 0;
 };
 
+// 组件工厂 - 单例模式
 class ComponentFactory
 {
 public:
@@ -462,14 +692,13 @@ public:
 		auto it = _creatorMap.find(name);
 		if (it != _creatorMap.end())
 		{
+			// 直接调用注册的创建函数，已指向对象池的Acquire
 			Component* c = it->second();
-			c->Name = name;
-#ifdef DEBUG_COMPONENT
-			char c_this[1024];
-			sprintf_s(c_this, "%p", c);
-			std::string thisId = { c_this };
-			Debug::Log("Create Component [%s]%s. \n", name.c_str(), thisId.c_str());
-#endif // DEBUG
+			if (c)
+			{
+				c->Name = name;
+				LOG_COMPONENT("Create Component %s.\n", c->thisName.c_str());
+			}
 			return c;
 		}
 		return nullptr;
@@ -497,9 +726,3 @@ private:
 
 	std::map<std::string, ComponentCreator> _creatorMap{};
 };
-
-static Component* CreateComponent(const std::string name)
-{
-	return ComponentFactory::GetInstance().Create(name);
-}
-

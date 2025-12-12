@@ -16,6 +16,7 @@
   <ItemGroup>
     <ClCompile Include="src\Common.cpp" />
     <ClCompile Include="src\Common\Components\Component.cpp" />
+    <ClCompile Include="src\Common\Components\ComponentPool.cpp" />
     <ClCompile Include="src\Common\EventSystems\EventSystem.cpp" />
     <ClCompile Include="src\CRTExt.cpp" />
     <ClCompile Include="src\Extension.cpp" />
@@ -193,6 +194,7 @@
     <ClInclude Include="src\Common\Components\GameObject.h" />
     <ClInclude Include="src\Common.h" />
     <ClInclude Include="src\Common\Components\Component.h" />
+    <ClInclude Include="src\Common\Components\ComponentPool.h" />
     <ClInclude Include="src\Common\Components\Scriptable.h" />
     <ClInclude Include="src\Common\Components\ScriptComponent.h" />
     <ClInclude Include="src\Common\EventSystems\EventSystem.h" />
@@ -476,7 +478,7 @@
       <ConformanceMode>true</ConformanceMode>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <OmitFramePointers>true</OmitFramePointers>
-      <PreprocessorDefinitions>DEBUG;SYR_VER=2;HAS_EXCEPTIONS=0;NOMINMAX;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;%(PreprocessorDefinitions);%(AdditionalDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;DEBUG_COMPONENT;SYR_VER=2;HAS_EXCEPTIONS=0;NOMINMAX;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;%(PreprocessorDefinitions);%(AdditionalDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>

@@ -273,87 +273,138 @@ DEFINE_HOOK(0x6B796A, SpawnManagerClass_Update_PutSpawns_FireOnce, 0x5)
 // }
 
 #pragma region Rocket Homing
+
 // 如果子机管理器输入的预设目标在天上，自动开启跟踪模式
 DEFINE_HOOK(0x6B7A32, SpawnManagerClass_Update_Add_Missile_Target, 0x5)
 {
+	GET(SpawnManagerClass*, pManager, ESI);
 	GET(TechnoClass*, pRocket, ECX);
-	GET(AbstractClass*, pTarget, EAX);
+	GET(AbstractClass*, pTarget, EAX); // 预设目标，pManager->Destination，之后会通过KamikazeTrackerClass_Add写入Node->Cell
 
-	if (pTarget && pTarget->IsInAir())
+	// 将预设目标写入导弹，如果目标在天上，则开启跟踪模式
+	if (MissileHoming* homing = GetScript<TechnoExt, MissileHoming>(pRocket))
 	{
-		if (MissileHoming* homing = GetScript<TechnoExt, MissileHoming>(pRocket))
+		// 预设目标不是FootClass，则强制关闭跟踪模式
+		if (pTarget->AbstractFlags & AbstractFlags::Foot)
 		{
-			homing->IsHoming = true;
+			homing->HomingTarget = pTarget;
+			// 目标如果在空中，强制开启跟踪模式
+			if (pTarget->IsInAir())
+			{
+				homing->IsHoming = true;
+			}
+		}
+		else
+		{
+			homing->HomingTarget = nullptr;
+			homing->IsHoming = false;
 		}
 	}
 
 	return 0;
 }
 
-// 将子机管理器的目标输入给导弹本体
-DEFINE_HOOK(0x54E42B, KamikazeTrackerClass_Add_Missile_Has_Target, 0x6)
-{
-	GET_STACK(AircraftClass*, pRocket, 0x1C);
-	GET(AbstractClass*, pTarget, ECX);
+// SpawnManagerClass_Update 会调用KamikazeTrackerClass_Add，传入导弹和目标格子
+// 创建KamikazeControl，关联导弹和目标格子，写入全局清单KamikazeContainer
+// 之后便交给KamikazeContainer处理，在Update中更新导弹的目标
+// 这里传进来的参数destination，是SpawnManagerClass中记录的目标，是Techno或者Cell
+// 这里会按照传入的destination，获得导弹脚下的格子，或者目标的格子，写入KamikazeControl
+// DEFINE_HOOK(0x54E478, KamikazeTrackerClass_Add, 0x5)
+// {
+// 	GET(Kamikaze::KamikazeControl*, pKamikazeControl, EBX);
+// 	AircraftClass* pRocket = pKamikazeControl->Item;
+// 	AbstractClass* pCell = pKamikazeControl->Cell;
+// 	AbstractType cellType = AbstractType::None;
+// 	if (pCell)
+// 	{
+// 		cellType = pCell->WhatAmI();
+// 	}
 
-	pRocket->SetTarget(pTarget);
-	return 0;
+// 	AbstractClass* pTarget = pRocket->Target;
+
+// 	Debug::Log("KamikazeTrackerClass_Add, pKamikaze = %p, %p -> %p(%u), RocketTarget = %p\n", pKamikazeControl, pRocket, pCell, static_cast<unsigned int>(cellType), pRocket->Target);
+// 	if (pTarget)
+// 	{
+// 		pKamikazeControl->Cell = pTarget;
+// 	}
+// 	return 0;
+// }
+
+namespace KamikazeTracker
+{
+	Kamikaze::KamikazeControl* pKamikazeControl = nullptr;
 }
 
-// 如果导弹本体有目标，则修改导弹控制器的目标为导弹本体的目标
-DEFINE_HOOK(0x54E478, KamikazeTrackerClass_Add, 0x5)
-{
-	GET(Kamikaze::KamikazeControl*, pKamikazeControl, EBX);
-	AircraftClass* pRocket = pKamikazeControl->Item;
-	AbstractClass* pTarget = pRocket->Target;
-	if (pTarget)
-	{
-		pKamikazeControl->Cell = pTarget;
-	}
-	return 0;
-}
-
-// 导弹追击的目标死亡，需要重设目标
-DEFINE_HOOK(0x54E661, KamikazeTrackerClass_Cannot_Detach2, 0x6)
+// 此处记录下pKamikazeControl的指针，便于后续修改导弹的目标
+DEFINE_HOOK(0x54E51D, KamikazeContainer_Update_SetTargetBefore, 0x5)
 {
 	GET(Kamikaze::KamikazeControl*, pKamikazeControl, EAX);
-	AircraftClass* pRocket = pKamikazeControl->Item;
-	if (IsDeadOrInvisible(dynamic_cast<TechnoClass*>(pRocket)))
-	{
-		// 导弹作为目标时，死亡的是导弹，也是目标
-		return 0;
-	}
-	AbstractClass* pTarget = pKamikazeControl->Cell;
-	TechnoClass* pTargetTechno = nullptr;
-	if (!CastToTechno(pTarget, pTargetTechno) || IsDeadOrInvisible(pTargetTechno))
-	{
-		// 目标是个死人，替换目标
-		CoordStruct lastLocation = pRocket->GetCoords();
-		if (MissileHoming* homing = GetScript<TechnoExt, MissileHoming>(dynamic_cast<TechnoClass*>(pRocket)))
-		{
-			homing->IsHoming = false;
-			lastLocation = homing->HomingTargetLocation;
-		}
-		// 获取最后目标所在的格子，然后重设导弹目标
-		if (CellClass* pCell = MapClass::Instance->TryGetCellAt(lastLocation))
-		{
-			pKamikazeControl->Cell = pCell;
-		}
-	}
+	// 缓存
+	KamikazeTracker::pKamikazeControl = pKamikazeControl;
 	return 0;
 }
 
-DEFINE_HOOK(0x6622C0, RocketLocomotionClass_Process, 0x6)
+// 不可以Hook此处，否则会破坏对ECX的检查，认为pCell为0，导致进入0x54E540，搜寻脚下的格子当做导弹的目标
+// DEFINE_HOOK(0x54E524, KamikazeContainer_Update_SetTarget, 0xA)
+// {
+// 	GET(Kamikaze::KamikazeControl*, pKamikazeControl, EAX);
+// 	GET(AbstractClass*, pTarget, ECX);
+
+// 	AircraftClass* pRocket = pKamikazeControl->Item;
+// 	AbstractClass* pCell = pKamikazeControl->Cell;
+
+// 	DWORD* pECX = R->ECX<DWORD*>();
+
+// 	Debug::Log(" - KamikazeContainer_Update_SetTarget, pKamikaze = %p, %p -> %p, ECX = %p, %p\n", pKamikazeControl, pRocket, pCell, R->ECX(), *pECX);
+// 	return 0;
+// }
+
+// 当KamikazeControl的Cell为0时，会搜寻脚下的格子作为目标
+// DEFINE_HOOK(0x54E540, KamikazeContainer_Update_SetTarget_Zero, 0x7)
+// {
+// 	Debug::Log(" - KamikazeContainer_Update_SetTarget_Zero\n");
+// 	return 0;
+// }
+
+// 此处已设置完导弹的目标，准备执行导弹的任务，可以在此修改导弹的目标
+DEFINE_HOOK(0x54E56D, KamikazeContainer_Update_SetTargetAfter, 0x6)
 {
-	GET(FootClass*, pFoot, ESI);
-	RocketLocomotionClass* pLoco = dynamic_cast<RocketLocomotionClass*>(pFoot->Locomotor.get());
-	// If missile try to AA, it will block on ground. step is 0, can't move.
-	if (pLoco->MissionState == 0)
+	GET(AircraftClass*, pRocket, ESI);
+	// 读取记录下的KamikazeControl，修改导弹的目标
+	Kamikaze::KamikazeControl* pKamikazeControl = KamikazeTracker::pKamikazeControl;
+	KamikazeTracker::pKamikazeControl = nullptr;
+
+	// 如有必要修改导弹的目标，同时修改KamikazeControl的Cell
+	if (MissileHoming* homing = GetScript<TechnoExt, MissileHoming>(pRocket))
 	{
-		pLoco->MissionState = 1;
+		// 此处尝试修改导弹的目标，同时修改KamikazeControl的Cell
+		homing->KamikazeUpdateTarget(pKamikazeControl);
 	}
+
 	return 0;
 }
+
+// DEFINE_HOOK(0x6622C0, RocketLocomotionClass_Process, 0x6)
+// {
+// 	GET(FootClass*, pFoot, ESI);
+// 	RocketLocomotionClass* pLoco = dynamic_cast<RocketLocomotionClass*>(pFoot->Locomotor.get());
+
+// 	AbstractClass* pTarget = pFoot->Target;
+// 	AbstractType targetType = AbstractType::None;
+// 	if (pTarget)
+// 	{
+// 		targetType = pTarget->WhatAmI();
+// 	}
+// 	Debug::Log("RocketLocomotionClass_Process, %d, %p -> %p, %u\n", pLoco->MissionState, pFoot, pTarget, static_cast<unsigned int>(targetType));
+
+// 	// RocketLocomotionClass* pLoco = dynamic_cast<RocketLocomotionClass*>(pFoot->Locomotor.get());
+// 	// If missile try to AA, it will block on ground. step is 0, can't move.
+// 	// if (pLoco->MissionState == 0)
+// 	// {
+// 	// 	pLoco->MissionState = 1;
+// 	// }
+// 	return 0;
+// }
 
 DEFINE_HOOK(0x662CAC, RocketLocomotionClass_Process_Step5_To_Lazy_4, 0x6)
 {
@@ -382,5 +433,3 @@ DEFINE_HOOK(0x66304F, RocketLocomotionClass_663030, 0x5)
 	return 0;
 }
 #pragma endregion
-
-

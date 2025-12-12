@@ -1,4 +1,7 @@
 ﻿#include "Component.h"
+#include "ComponentPool.h"
+
+
 
 void Component::SetExtData(IExtData* extData)
 {
@@ -9,6 +12,7 @@ void Component::SetExtData(IExtData* extData)
 	}
 }
 
+
 void Component::OnUpdate()
 {
 	IComponent::OnUpdate();
@@ -16,153 +20,187 @@ void Component::OnUpdate()
 
 void Component::EnsureAwaked()
 {
-	if (!_awaked)
-	{
+	int callId = 0;
 #ifdef DEBUG_COMPONENT
-		char t_this[1024];
-		sprintf_s(t_this, "%p", this);
-		std::string thisId2 = { t_this };
-		Debug::Log("Component [%s]%s - %s calling awake, children has %d\n", this->thisName.c_str(), this->thisId.c_str(), thisId2.c_str(), _children.size());
-#endif // DEBUG
-		Awake();
-		// 在Awake中可能出现移除自身的操作，_awaked标记也用于控制Remove时是否延迟删除
-		_awaked = true;
-		ForeachChild([](Component* c)
-			{
-#ifdef DEBUG_COMPONENT
-				char c_this[1024];
-				sprintf_s(c_this, "%p", c);
-				std::string thisId3 = { c_this };
-				Debug::Log("Child Component [%s]%s - %s calling EnsureAwaked.\n", c->thisName.c_str(), c->thisId.c_str(), thisId3.c_str());
-#endif // DEBUG
-				c->EnsureAwaked();
-			});
-		// 销毁失效的子模块
-		ClearDisableComponent();
+	static std::atomic<int> globalCallId{ 0 };
+	callId = ++globalCallId;
+
+	LOG_COMPONENT("[EnsureAwaked #%d START] %s, _awaked=%d.\n", callId, thisName.c_str(), _awaked);
+#endif // DEBUG_COMPONENT
+
+	if (!_extData) {
+		// 如果触发，说明组件被唤醒时已脱离GameObject。
+		Debug::Log("致命错误：组件 [%s]%p 的 _extData 为 NULL！\n", Name.c_str(), this);
+		// 可以选择安全地跳过初始化或自我销毁
+		this->Disable();
+		return;
 	}
+
+	// 如果已经在Active或Disabling状态，直接返回
+	if (IsAwaked() || IsDisabling())
+	{
+		LOG_COMPONENT("[EnsureAwaked #%d] Component already awaked (state: %s)\n", callId, _disable ? "Disabling" : "Active");
+		return;
+	}
+
+#ifdef DEBUG_COMPONENT
+	// 获取调用栈
+	void* returnAddress = _ReturnAddress();
+	LOG_COMPONENT("[EnsureAwaked #%d] Caller: %p\n", callId, returnAddress);
+#endif // DEBUG_COMPONENT
+
+	// 尝试执行Awake
+	try {
+		LOG_COMPONENT("[EnsureAwaked #%d] Calling Awake()\n", callId);
+
+		Awake();
+		_awaked = true;
+
+		// 检查Awake过程中是否被禁用
+		if (_disable)
+		{
+			// 标记为 Disabling
+			LOG_COMPONENT("[EnsureAwaked #%d] Component disabled during Awake, marking as Disabling\n", callId);
+		}
+		else {
+			// 成功激活
+			LOG_COMPONENT("[EnsureAwaked #%d] Component activated successfully\n", callId);
+		}
+	}
+	catch (...)
+	{
+		// 发生异常，回滚状态
+		LOG_COMPONENT("[EnsureAwaked #%d] Exception in Awake(), state reset\n", callId);
+		throw;
+	}
+
+	// 唤醒子组件（不清理disable的组件）
+	std::vector<Component*> childrenToProcess;
+	childrenToProcess.reserve(_children.size());
+	for (Component* child : _children) {
+		if (child->IsUninitialized()) {
+			childrenToProcess.push_back(child);
+		}
+	}
+
+	for (Component* child : childrenToProcess) {
+		child->EnsureAwaked();
+	}
+	LOG_COMPONENT("[EnsureAwaked #%d END] %s, _awaked=%d\n", callId, thisName.c_str(), _awaked);
 }
 
 void Component::EnsureDestroy()
 {
-#ifdef DEBUG_COMPONENT
-	char t_this[1024];
-	sprintf_s(t_this, "%p", this);
-	std::string thisId2 = { t_this };
-	Debug::Log("Component [%s]%s - %s calling destroy, children has %d\n", this->thisName.c_str(), this->thisId.c_str(), thisId2.c_str(), _children.size());
-#endif // DEBUG
-	_disable = true;
-	Destroy();
-	for (auto it = _children.begin(); it != _children.end();)
+	// 如果已经在Disabling状态，直接返回
+	if (IsDisabling())
 	{
-#ifdef DEBUG_COMPONENT
-		Component* c = (*it);
-		char c_this[1024];
-		sprintf_s(c_this, "%p", c);
-		std::string thisId3 = { c_this };
-		Debug::Log("Child Component [%s]%s - %s calling EnsureDestroy.\n", c->thisName.c_str(), c->thisId.c_str(), thisId3.c_str());
-#endif // DEBUG
-		(*it)->EnsureDestroy();
-		it = _children.erase(it);
+		return;
 	}
-	_parent = nullptr;
 
-	// 释放资源
-	// GameDelete(this);
-	// delete this;
-	FreeComponent(); // 返回缓冲池
-}
+	LOG_COMPONENT("Component %s - EnsureDestroy START, children=%zu\n", thisName.c_str(), _children.size());
 
-bool Component::AlreadyAwake()
-{
-	return _awaked;
+	_disable = true;
+
+	// 从父组件移除自己
+	if (_parent)
+	{
+		Component* parent = _parent;
+		_parent = nullptr;
+		parent->RemoveComponent(this, false);
+	}
+
+	// 保存子组件列表，然后清空
+	std::vector<Component*> childrenCopy = _children;
+	_children.clear();
+
+	// 递归销毁子组件
+	for (Component* child : childrenCopy)
+	{
+		if (child) {
+			child->_parent = nullptr;
+			child->EnsureDestroy();
+		}
+	}
+
+	// 销毁自己
+	try
+	{
+		Destroy();
+	}
+	catch (...)
+	{
+		Debug::Log("Error: EXCEPTION in Destroy() for %s\n", thisName.c_str());
+	}
+
+	// 释放自己到对象池
+	FreeComponent();
+
+	LOG_COMPONENT("Component %s - EnsureDestroy END\n", thisName.c_str());
 }
 
 void Component::Disable()
 {
+	if (_disable) return;
+
 	_disable = true;
+	// 对于Disabling状态，什么都不做（已经在销毁过程中）
 }
 
-bool Component::IsEnable()
-{
-	return !_disable;
-}
-
-void Component::Activate()
-{
-	_active = true;
-}
-
-void Component::Deactivate()
-{
-	_active = false;
-}
-
-bool Component::IsActive()
-{
-	return _active;
-}
-
+/// <summary>
+/// 将Component加入子列表，同时赋予自身储存的IExtData
+/// </summary>
 void Component::AddComponent(Component* component, int index)
 {
+	if (!component) return;
+
 	// 将要加入的组件的子组件的extData全部更换
 	component->SetExtData(_extData);
 	component->_parent = this;
 	if (index < 0 || index >= (int)_children.size())
 	{
-		// vector::push_back 和 vector::emplace_back 会调用析构
-		// list::emplace_back 不会
-		_children.emplace_back(component);
+		_children.push_back(component);
 	}
 	else
 	{
 		// 插入指定位置
 		auto it = _children.begin();
-		if (index > 0)
-		{
-			std::advance(it, index);
-		}
+		std::advance(it, index);
 		_children.insert(it, component);
 	}
-#ifdef DEBUG_COMPONENT
-	std::string thisId = component->thisId;
-	std::string thisName = component->thisName;
-	Debug::Log("Add Component [%s]%s to %s [%s]%s.\n", thisName.c_str(), thisId.c_str(), extName.c_str(), this->thisName.c_str(), this->thisId.c_str());
-#endif // DEBUG
+	LOG_COMPONENT("Add Component %s to %s.\n", component->thisName.c_str(), this->thisName.c_str());
 }
 
 Component* Component::AddComponent(const std::string& name, int index)
 {
-	Component* c = CreateComponent(name);
-	if (c)
+	try
 	{
-		AddComponent(c, index);
+		Component* c = ComponentPool::GetInstance().Create(name);
+		if (c)
+		{
+			AddComponent(c, index);
+		}
+		return c;
 	}
-	return c;
+	catch (const std::exception& e)
+	{
+		Debug::Log("Exception when creating component %s: %s\n", name.c_str(), e.what());
+	}
+	catch (...)
+	{
+		Debug::Log("Unknown exception when creating component %s\n", name.c_str());
+	}
+	return nullptr;
 }
 
-Component* Component::FindOrAllocate(const std::string& name)
-{
-	Component* c = GetComponentByName(name);
-	if (!c)
-	{
-		// 添加新的Component
-		c = AddComponent(name);
-		// 激活新的Component
-		c->EnsureAwaked();
-	}
-	return c;
-}
-
+// <summary>
+// 将Component从子列表中移除
+// </summary>
 void Component::RemoveComponent(Component* component, bool disable)
 {
 	auto it = std::find(_children.begin(), _children.end(), component);
 	if (it != _children.end())
 	{
-#ifdef DEBUG_COMPONENT
-		std::string thisId = component->thisId;
-		std::string thisName = component->thisName;
-		Debug::Log("Remove Component [%s]%s from %s [%s]%s.\n", thisName.c_str(), thisId.c_str(), extName.c_str(), this->thisName.c_str(), this->thisId.c_str());
-#endif // DEBUG
+		LOG_COMPONENT("Remove Component %s from %s.\n", component->thisName.c_str(), this->thisName.c_str());
 		Component* c = *it;
 		c->_parent = nullptr;
 		if (disable)
@@ -174,136 +212,170 @@ void Component::RemoveComponent(Component* component, bool disable)
 	}
 }
 
+
+/// <summary>
+/// 在结束循环后需要从_children中清理已经标记为disable的component
+/// </summary>
 void Component::ClearDisableComponent()
 {
-	for (auto it = _children.begin(); it != _children.end();)
+	std::vector<Component*> disabledChildren;
+
+	// 收集需要清理的组件（Disabling状态）
+	for (auto it = _children.begin(); it != _children.end(); ++it)
 	{
-		Component* c = *it;
-		if (c->_disable)
+		Component* child = *it;
+		if (child && child->IsDisabling())
 		{
-#ifdef DEBUG_COMPONENT
-			Debug::Log("Remove disable [%s] Component [%s]%s from %s [%s]%s.\n", (*it)->Name.c_str(), (*it)->thisName.c_str(), (*it)->thisId.c_str(), extName.c_str(), this->thisName.c_str(), this->thisId.c_str());
-#endif //DEBUG
-			c->_parent = nullptr;
-			it = _children.erase(it);
-			c->EnsureDestroy();
+			disabledChildren.push_back(child);
 		}
-		else
+	}
+
+	// 再处理
+	for (Component* child : disabledChildren)
+	{
+		// 从_children中移除
+		auto it = std::find(_children.begin(), _children.end(), child);
+		if (it != _children.end())
 		{
-			it++;
+			_children.erase(it);
 		}
+
+		LOG_COMPONENT("Clear disable Component %s from %s.\n", child->thisName.c_str(), this->thisName.c_str());
+
+		child->_parent = nullptr;
+		child->EnsureDestroy();
 	}
 }
 
+
+/// <summary>
+/// 从存档中恢复子组件列表
+/// </summary>
 void Component::RestoreComponent()
 {
-	// 去除名单中不存在的组件
-	for (auto it = _children.begin(); it != _children.end();)
+	// 1. 创建InstanceId到组件的映射
+	std::unordered_map<std::string, Component*> instanceIdMap;
+	for (Component* c : _children)
 	{
-		Component* c = *it;
-		if (std::find(_childrenNames.begin(), _childrenNames.end(), c->Name) == _childrenNames.end())
+		if (!c->IsDisabling())
 		{
-#ifdef DEBUG_COMPONENT
-			Debug::Log("Remove disable [%s] Component [%s]%s from %s [%s]%s.\n", (*it)->Name.c_str(), (*it)->thisName.c_str(), (*it)->thisId.c_str(), extName.c_str(), this->thisName.c_str(), this->thisId.c_str());
-#endif //DEBUG
-			c->_parent = nullptr;
-			it = _children.erase(it);
-			c->EnsureDestroy();
+			// 确保组件有InstanceId
+			if (c->InstanceId.empty())
+			{
+				c->GenerateInstanceId();
+			}
+			instanceIdMap[c->InstanceId] = c;
+		}
+	}
+
+	// 2. 准备新的组件列表（按照存档顺序）
+	std::vector<Component*> newChildren;
+	newChildren.reserve(_childrenInstanceIds.size());
+
+	// 3. 按照存档顺序精确匹配
+	for (size_t i = 0; i < _childrenInstanceIds.size(); ++i)
+	{
+		const std::string& name = _childrenNames[i];
+		const std::string& targetInstanceId = _childrenInstanceIds[i];
+
+		Component* component = nullptr;
+		auto it = instanceIdMap.find(targetInstanceId);
+
+		if (it != instanceIdMap.end())
+		{
+			// 找到精确匹配的组件
+			component = it->second;
+
+			// 验证名称是否匹配
+			if (component->Name != name)
+			{
+				Debug::Log("Info: Component instance %s renamed from %s to %s\n", targetInstanceId.c_str(), component->Name.c_str(), name.c_str());
+				component->Name = name; // 更新为存档中的名称
+			}
+
+			// 从映射中移除，避免重复使用
+			instanceIdMap.erase(it);
 		}
 		else
 		{
-			it++;
+			// 没有找到精确匹配，需要创建新组件
+			LOG_COMPONENT("RestoreStructure: Creating new Component [%s] with InstanceId %s\n", name.c_str(), targetInstanceId.c_str());
+
+			component = ComponentPool::GetInstance().Create(name);
+			if (component)
+			{
+				// 设置存档中的InstanceId
+				component->InstanceId = targetInstanceId;
+
+				// 添加到结构
+				component->SetExtData(_extData);
+				component->_parent = this;
+
+				LOG_COMPONENT("Add Component %s to %s (structure only).\n", component->thisName.c_str(), thisName.c_str());
+			}
+		}
+
+		if (component)
+		{
+			newChildren.push_back(component);
 		}
 	}
-	// 添加列表中不存在的组件
-	std::vector<std::string> currentNames{};
-	for (Component* c : _children)
+
+	// 4. 销毁不再需要的组件（在instanceIdMap中剩余的）
+	for (auto& [instanceId, component] : instanceIdMap)
 	{
-		currentNames.push_back(c->Name);
+		if (!component->IsDisabling())
+		{
+			LOG_COMPONENT("RestoreStructure: Destroying unused component %s (InstanceId: %s)\n", component->thisName.c_str(), instanceId.c_str());
+			component->_parent = nullptr;
+			component->EnsureDestroy();
+		}
 	}
 
-	// 取差集
-	std::vector<std::string> v;
-	v.resize(_childrenNames.size());
-	std::vector<std::string>::iterator end = set_difference(_childrenNames.begin(), _childrenNames.end(), currentNames.begin(), currentNames.end(), v.begin());
-
-#ifdef DEBUG_COMPONENT
-	std::string s1 = "_childrenNames: ";
-	for_each(_childrenNames.begin(), _childrenNames.end(), [&](std::string& s) {
-		s1.append(s).append(", ");
-		});
-	s1.append("\n");
-	Debug::Log(s1.c_str());
-
-	std::string s2 = "currentNames: ";
-	for_each(currentNames.begin(), currentNames.end(), [&](std::string& s) {
-		s2.append(s).append(", ");
-		});
-	s2.append("\n");
-	Debug::Log(s2.c_str());
-
-	std::string s3;
-	for_each(v.begin(), end, [&](std::string& s) {
-		s3.append(s).append(", ");
-		});
-	s3.append("\n");
-	Debug::Log(s3.c_str());
-#endif
-
-	for (auto ite = v.begin(); ite != end; ite++)
-	{
-#ifdef DEBUG_COMPONENT
-		Debug::Log("Nedd to add new Component [%s] to Component [%s]%s \n", (*ite).c_str(), thisName.c_str(), thisId.c_str());
-#endif
-		Component* c = CreateComponent((*ite));
-		AddComponent(c);
-	}
+	// 5. 更新_children（已经按照存档顺序）
+	_children = std::move(newChildren);
 }
+
+
 
 Component* Component::GetComponentInParentByName(const std::string& name)
 {
-	Component* c = nullptr;
-	// find first level
-	for (Component* children : _children)
+	if (!_parent)
 	{
-		if (children->Name == name)
+		return nullptr;
+	}
+	// 在兄弟组件中查找
+	for (Component* c : _parent->_children)
+	{
+		if (c != this && c->Name == name)
 		{
-			c = children;
-			break;
+			return c;
 		}
 	}
-	if (!c && _parent)
-	{
-		c = _parent->GetComponentInParentByName(name);
-	}
-	return c;
+	// 在父组件的父节点中查找
+	return _parent->GetComponentInParentByName(name);
 }
 
 Component* Component::GetComponentInChildrenByName(const std::string& name)
 {
-	Component* c = nullptr;
-	// find first level
-	for (Component* children : _children)
+	// 在当前层级查找
+	for (Component* c : _children)
 	{
-		if (children->Name == name)
+		if (c->Name == name)
 		{
-			c = children;
-			break;
+			return c;
 		}
 	}
-	if (!c)
+	// 在子组件中查找，深度优先
+	for (Component* c : _children)
 	{
-		for (Component* children : _children)
+		Component* found = c->GetComponentInChildrenByName(name);
+		if (found)
 		{
-			Component* r = children->GetComponentInChildrenByName(name);
-			if (r)
-			{
-				c = r;
-				break;
-			}
+			return found;
 		}
 	}
-	return c;
+	return nullptr;
 }
 
 Component* Component::GetComponentByName(const std::string& name)
@@ -311,19 +383,31 @@ Component* Component::GetComponentByName(const std::string& name)
 	return GetComponentInChildrenByName(name);
 }
 
-Component* Component::GetParent()
+// 组件查找
+Component* Component::FindOrAllocate(const std::string& name)
 {
-	return _parent;
+	Component* c = GetComponentByName(name);
+	if (!c)
+	{
+		// 添加新的Component
+		c = AddComponent(name);
+		if (c)
+		{
+			// 激活新的Component
+			c->EnsureAwaked();
+		}
+	}
+	return c;
 }
+
 
 void Component::AttachToComponent(Component* component)
 {
-	if (_parent == component)
+	if (!component || component == this)
 	{
 		return;
 	}
 	DetachFromParent();
-
 	component->AddComponent(this);
 }
 
@@ -332,39 +416,51 @@ void Component::DetachFromParent(bool disable)
 	if (_parent)
 	{
 		_parent->RemoveComponent(this, disable);
-		this->_parent = nullptr;
 	}
 }
 
-#ifdef DEBUG
 
-void Component::GetComponentStates(std::vector<ComponentState>& states, int& level)
+Component* Component::Clone() const
 {
-	// 自己
-	std::string name = "";
-	if (level > 1)
+	// 通过工厂创建新实例
+	Component* newComponent = ComponentFactory::GetInstance().Create(this->Name);
+
+	if (newComponent)
 	{
-		for (int i = 0; i < level - 1; i++)
+		newComponent->CopyFrom(*this);
+	}
+
+	return newComponent;
+}
+
+void Component::CopyFrom(const Component& other)
+{
+	// 使用拷贝赋值运算符
+	*this = other;
+
+	// 复制子组件
+	_children.clear();
+	for (Component* child : other._children)
+	{
+		Component* clonedChild = child->Clone();
+		if (clonedChild)
 		{
-			name.append("  ");
+			clonedChild->_parent = this;
+			_children.push_back(clonedChild);
 		}
 	}
-	if (level > 0)
-	{
-		name.append("--");
-	}
-	name.append(this->Name);
-	if (!this->Tag.empty())
-	{
-		name.append("#").append(this->Tag);
-	}
-	ComponentState state{ name, IsActive() };
-	states.push_back(state);
-	ForeachChild([&states, &level](Component* c) {
-		int l = level + 1;
-		c->GetComponentStates(states, l);
-		});
 }
 
-#endif // DEBUG
-
+void Component::FreeComponent()
+{
+	// 检查是否已经通过EnsureDestroy释放
+	if (!_disable)
+	{
+		Debug::Log("Warning: FreeComponent called without EnsureDestroy for %s\n",
+			Name.c_str());
+		// 直接调用 EnsureDestroy
+		EnsureDestroy();
+		return;
+	}
+	ComponentPool::GetInstance().Release(this);
+}

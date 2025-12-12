@@ -13,10 +13,10 @@
 #define VERSION_MAJOR 0
 
 // Indicates major changes and significant additions, like new logics
-#define VERSION_MINOR 1
+#define VERSION_MINOR 2
 
 // Indicates minor changes, like vanilla bugfixes, unhardcodings or hacks
-#define VERSION_REVISION 15
+#define VERSION_REVISION 0
 
 // Indicates Kratos-related bugfixes only
 #define VERSION_PATCH 0

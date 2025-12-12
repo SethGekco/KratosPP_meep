@@ -1167,31 +1167,31 @@ void AttachEffect::OnGScreenRender(EventSystem* sender, Event e, void* args)
 			if (_gameObject)
 			{
 				int ii = 0;
-				std::vector<Component::ComponentState> states;
+				std::vector<Component::ComponentInfo> infos;
 				if (pTechno)
 				{
 					std::string uiName = std::string{ "" }.append("[").append(pTechno->GetTechnoType()->ID).append("]")
 						.append(WString2String(pTechno->GetTechnoType()->UIName));
-					states.push_back(Component::ComponentState{ uiName, !pTechno->InLimbo });
+					infos.push_back(Component::ComponentInfo{ uiName, !pTechno->InLimbo });
 					ii = -1;
 				}
 				else if (pBullet)
 				{
 					std::string uiName = std::string{ "" }.append("[").append(pBullet->GetType()->ID).append("]");
-					states.push_back(Component::ComponentState{ uiName, !pBullet->InLimbo });
+					infos.push_back(Component::ComponentInfo{ uiName, !pBullet->InLimbo });
 					ii = -1;
 				}
 				int level = 0;
-				GetComponentStates(states, level);
+				GetComponentInfos(infos, level);
 				Point2D pos = ToClientPos(location);
-				for (Component::ComponentState& state : states)
+				for (Component::ComponentInfo& info : infos)
 				{
 					if (ii++ == 0) continue;
-					std::string log{ state.Name };
+					std::string log{ info.Name };
 					log.append("\n");
 					pos.Y += offsetZ;
 					ColorStruct color = Colors::Green;
-					if (!state.Active)
+					if (!info.Active)
 					{
 						color = Colors::Red;
 					}

@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include <Kamikaze.h>
+
 #include <Utilities/Debug.h>
 
 #include <Common/Components/ScriptComponent.h>
@@ -18,11 +20,23 @@ public:
 
 	void Setup();
 
+	// Kamikaze导弹跟踪，重设目标
+	bool KamikazeUpdateTarget(Kamikaze::KamikazeControl* pKamikazeControl);
+
+	void OnTechnoDelete(EventSystem* sender, Event e, void* args)
+	{
+		if (args == HomingTarget)
+		{
+			HomingTarget = nullptr;
+		}
+	}
+
 	virtual void Clean() override
 	{
 		TechnoScript::Clean();
 
 		IsHoming = false;
+		HomingTarget = nullptr;
 		HomingTargetLocation = CoordStruct::Empty;
 
 		_homingData = nullptr;
@@ -36,6 +50,8 @@ public:
 
 	// 子机导弹跟踪，标记可由Hook强制开启
 	bool IsHoming = false;
+	// 跟踪的目标，可以是Techno或者Cell，由SpawnManagerClass_Update_Add_Missile_Target写入
+	AbstractClass* HomingTarget = nullptr;
 	CoordStruct HomingTargetLocation = CoordStruct::Empty;
 
 #pragma region save/load
@@ -44,6 +60,7 @@ public:
 	{
 		return stream
 			.Process(this->IsHoming)
+			.Process(this->HomingTarget)
 			.Process(this->HomingTargetLocation)
 			.Process(this->_initHomingFlag)
 			.Success();
