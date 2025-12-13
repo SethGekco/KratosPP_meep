@@ -8,6 +8,10 @@
 
 #include <Extension.h>
 #include <Utilities/Macro.h>
+#include <Utilities/EnumFunctions.h>
+
+#include <Extension/TechnoTypeExt.h>
+#include <Extension/WarheadTypeExt.h>
 
 #include <Extension/TechnoExt.h>
 
@@ -31,6 +35,38 @@ DEFINE_HOOK(0x51EAE0, InfantryClass_WhatAction_Cursor, 0x7)
 	return 0x51EB06;
 }
 
+// 兼容Phobos对空袭的目标控制
+DEFINE_HOOK(0x6F348F, TechnoClass_WhatWeaponShouldIUse_Airstrike, 0x7)
+{
+	enum { Primary = 0x6F37AD, Secondary = 0x6F3807 };
+
+	GET(TechnoClass*, pTargetTechno, EBP);
+	GET(WarheadTypeClass*, pSecondaryWH, ECX);
+
+	if (!pTargetTechno)
+	{
+		return Primary;
+	}
+
+	WarheadTypeExt::TypeData* warheadTypeData = GetTypeData<WarheadTypeExt, WarheadTypeExt::TypeData>(pSecondaryWH);
+
+	if (!EnumFunctions::IsTechnoEligible(pTargetTechno, warheadTypeData->AirstrikeTargets))
+	{
+		return Primary;
+	}
+
+	TechnoTypeClass* pTargetType = pTargetTechno->GetTechnoType();
+	TechnoTypeExt::TypeData* pTargetTypeData = GetTypeData<TechnoTypeExt, TechnoTypeExt::TypeData>(pTargetType);
+
+	if (pTargetTechno->AbstractFlags & AbstractFlags::Foot)
+	{
+		return pTargetTypeData->AllowAirstrike ? Secondary : Primary;
+	}
+
+	return (pTargetTypeData->AllowAirstrike && (!pTargetType->ResourceDestination || !pTargetType->ResourceGatherer))
+		? Secondary : Primary;
+}
+
 // 首次添加空袭管理器，跳过建筑检查
 DEFINE_HOOK(0x41D97B, AirstrikeClass_Setup_SkipBuildingCheck, 0x7)
 {
@@ -46,6 +82,62 @@ DEFINE_HOOK(0x41D97B, AirstrikeClass_Setup_SkipBuildingCheck, 0x7)
 		}
 	} while (pAircraft && (pAircraft = pAircraft->NextTeamMember) != nullptr);
 	return 0x41D98B;
+}
+
+// 兼容Phobos
+DEFINE_HOOK(0x41DA52, AirstrikeClass_ResetTarget_OriginalTarget, 0x6)
+{
+	enum { SkipGameCode = 0x41DA7C };
+
+	R->EDI(R->ESI());
+
+	return SkipGameCode;
+}
+
+// 兼容Phobos
+DEFINE_HOOK(0x41DA80, AirstrikeClass_ResetTarget_NewTarget, 0x6)
+{
+	enum { SkipGameCode = 0x41DA9C };
+
+	R->ESI(R->EBX());
+
+	return SkipGameCode;
+}
+
+// 兼容Phobos
+DEFINE_HOOK(0x41DAA4, AirstrikeClass_ResetTarget_ResetForOldTarget, 0xA)
+{
+	enum { SkipGameCode = 0x41DAAE };
+
+	GET(AirstrikeClass*, pAirstrike, EBP);
+	GET(TechnoClass*, pTarget, EDI);
+
+	// Debug::Log("空袭管理器 %d 清除旧目标，当前旧目标[%s]%d\n", pAirstrike, pTarget->GetTechnoType()->ID, pTarget);
+	TechnoStatus* status = nullptr;
+	if (TryGetStatus<TechnoExt>(pTarget, status))
+	{
+		status->CancelAirstrike(pAirstrike);
+	}
+
+	return SkipGameCode;
+}
+
+// 兼容Phobos
+DEFINE_HOOK(0x41DAD4, AirstrikeClass_ResetTarget_ResetForNewTarget, 0x6)
+{
+	enum { SkipGameCode = 0x41DADA };
+
+	GET(AirstrikeClass*, pAirstrike, EBP);
+	GET(TechnoClass*, pTarget, ESI);
+
+	// Debug::Log("空袭管理器 %d 设置新目标，当前新目标[%s]%d\n", pAirstrike, pTarget->GetTechnoType()->ID, pTarget);
+	TechnoStatus* status = nullptr;
+	if (TryGetStatus<TechnoExt>(pTarget, status))
+	{
+		status->SetAirstrike(pAirstrike);
+	}
+
+	return SkipGameCode;
 }
 
 // 接管空袭管理器向目标设置自己
@@ -136,6 +228,45 @@ DEFINE_HOOK(0x41DBD4, AirstrikeClass_ClearTarget, 0x7)
 // 	return 0;
 // }
 
+DEFINE_HOOK(0x41D604, AirstrikeClass_PointerGotInvalid_ResetForTarget, 0x6)
+{
+	enum { SkipGameCode = 0x41D634 };
+
+	GET(AirstrikeClass*, pAirstrike, ESI);
+	GET(TechnoClass*, pTarget, EAX);
+
+	// Debug::Log("空袭管理器 %d 清除旧目标，当前旧目标[%s]%d\n", pAirstrike, pTarget->GetTechnoType()->ID, pTarget);
+	TechnoStatus* status = nullptr;
+	if (TryGetStatus<TechnoExt>(pTarget, status))
+	{
+		status->CancelAirstrike(pAirstrike);
+	}
+
+	return SkipGameCode;
+}
+
+DEFINE_HOOK(0x65E97F, HouseClass_CreateAirstrike_SetTargetForUnit, 0x6)
+{
+	enum { SkipGameCode = 0x65E992 };
+
+	GET(AircraftClass*, pFirer, ESI);
+	GET_STACK(AirstrikeClass*, pThis, STACK_OFFSET(0x38, 0x1C));
+
+	const auto pOwner = pThis->Owner;
+
+	if (!pOwner)
+		return 0;
+
+	if (const auto pTarget = abstract_cast<TechnoClass*>(pOwner->Target))
+	{
+		pFirer->SetTarget(pTarget);
+
+		return SkipGameCode;
+	}
+
+	return 0;
+}
+
 namespace AirstrikePutOffset
 {
 	int flipY = -1;
@@ -177,13 +308,16 @@ DEFINE_HOOK(0x65E997, Airstrike_Supported_Reinforcements_Put, 0x6)
 	return 0;
 }
 
-namespace AirstrikeLaser
-{
-	bool CustomColor = false;
-	ColorStruct Color = Colors::Red;
-}
+#pragma region GetEffectTintIntensity
 
-// 绘制激光指示
+// 兼容Phobos，只能使用Phobos的方式控制线条和点的颜色
+// namespace AirstrikeLaser
+// {
+// 	bool CustomColor = false;
+// 	ColorStruct Color = Colors::Red;
+// }
+
+// 是否绘制激光
 DEFINE_HOOK(0x6D481D, TacticalClass_Draw_AirstrikeLaser_SkipBuildingCheck, 0x7)
 {
 	enum { draw = 0x6D482D, skip = 0x6D48FA };
@@ -194,67 +328,189 @@ DEFINE_HOOK(0x6D481D, TacticalClass_Draw_AirstrikeLaser_SkipBuildingCheck, 0x7)
 	{
 		return skip;
 	}
-	// 自定义颜色
-	AirstrikeLaser::CustomColor = true;
-	if (data->AirstrikeTargetLaser >= 0)
-	{
-		ColorStruct add = RulesClass::Instance->ColorAdd[data->AirstrikeTargetLaser];
-		AirstrikeLaser::Color = Drawing::Int_To_RGB(Add2RGB565(add));
-	}
-	else
-	{
-		AirstrikeLaser::Color = data->AirstrikeTargetLaserColor;
-	}
+	// 自定义颜色，为了兼容Phobos，只能使用Phobos的方式控制线条和点的颜色
+	// AirstrikeLaser::CustomColor = true;
+	// if (data->AirstrikeTargetLaser >= 0)
+	// {
+	// 	ColorStruct add = RulesClass::Instance->ColorAdd[data->AirstrikeTargetLaser];
+	// 	AirstrikeLaser::Color = Drawing::Int_To_RGB(Add2RGB565(add));
+	// }
+	// else
+	// {
+	// 	AirstrikeLaser::Color = data->AirstrikeLineColor;
+	// }
 	return draw;
 }
 
-DEFINE_HOOK(0x705976, TechnoClass_Draw_AirstrikeLaser_LineColor, 0x8)
+// DEFINE_HOOK(0x705976, TechnoClass_Draw_AirstrikeLaser_LineColor, 0x8)
+// {
+// 	if (!AirstrikeLaser::CustomColor)
+// 	{
+// 		AirstrikeLaser::Color = Drawing::Int_To_RGB(Add2RGB565(RulesClass::Instance->ColorAdd[RulesClass::Instance->LaserTargetColor]));
+// 	}
+// 	ColorStruct c = AirstrikeLaser::Color;
+// 	BYTE rand = (BYTE)Random::RandomRanged(0, 14);
+// 	if (c.R > rand)
+// 	{
+// 		c.R -= rand;
+// 	}
+// 	if (c.G > rand)
+// 	{
+// 		c.G -= rand;
+// 	}
+// 	if (c.B > rand)
+// 	{
+// 		c.B -= rand;
+// 	}
+// 	// 线的颜色
+// 	R->Stack(0x10, c);
+// 	return 0;
+// }
+
+// DEFINE_HOOK(0x705986, TechnoClass_Draw_AirstrikeLaser_PointColor, 0x6)
+// {
+// 	if (!AirstrikeLaser::CustomColor)
+// 	{
+// 		AirstrikeLaser::Color = Drawing::Int_To_RGB(Add2RGB565(RulesClass::Instance->ColorAdd[RulesClass::Instance->LaserTargetColor]));
+// 	}
+// 	ColorStruct c = AirstrikeLaser::Color;
+// 	// 点的颜色
+// 	R->ESI(Drawing::RGB_To_Int(c));
+// 	return 0x7059C7;
+// }
+
+// from Phobos, 绘制空袭闪光线和点的颜色
+namespace DrawAirstrikeFlareTemp
 {
-	if (!AirstrikeLaser::CustomColor)
-	{
-		AirstrikeLaser::Color = Drawing::Int_To_RGB(Add2RGB565(RulesClass::Instance->ColorAdd[RulesClass::Instance->LaserTargetColor]));
-	}
-	ColorStruct c = AirstrikeLaser::Color;
-	BYTE rand = (BYTE)Random::RandomRanged(0, 14);
-	if (c.R > rand)
-	{
-		c.R -= rand;
-	}
-	if (c.G > rand)
-	{
-		c.G -= rand;
-	}
-	if (c.B > rand)
-	{
-		c.B -= rand;
-	}
-	// 线的颜色
-	R->Stack(0x10, c);
+	TechnoClass* pTechno = nullptr;
+}
+
+DEFINE_HOOK(0x705860, TechnoClass_DrawAirstrikeFlare_SetContext, 0x8)
+{
+	GET(TechnoClass*, pThis, ECX);
+
+	// This is not used in vanilla function so ECX gets overwritten later.
+	DrawAirstrikeFlareTemp::pTechno = pThis;
+
 	return 0;
 }
 
-DEFINE_HOOK(0x705986, TechnoClass_Draw_AirstrikeLaser_PointColor, 0x6)
+DEFINE_HOOK(0x7058F6, TechnoClass_DrawAirstrikeFlare_LineColor, 0x5)
 {
-	if (!AirstrikeLaser::CustomColor)
-	{
-		AirstrikeLaser::Color = Drawing::Int_To_RGB(Add2RGB565(RulesClass::Instance->ColorAdd[RulesClass::Instance->LaserTargetColor]));
-	}
-	ColorStruct c = AirstrikeLaser::Color;
-	// 点的颜色
-	R->ESI(Drawing::RGB_To_Int(c));
-	return 0x7059C7;
+	enum { SkipGameCode = 0x705976 };
+
+	GET(int, zSrc, EBP);
+	GET(int, zDest, EBX);
+	REF_STACK(ColorStruct, color, STACK_OFFSET(0x70, -0x60));
+
+	// Fix depth buffer value.
+	int zValue = Math::min(zSrc, zDest) + AudioVisual::Data()->AirstrikeLineZAdjust;
+	R->EBP(zValue);
+	R->EBX(zValue);
+
+	// Allow custom colors.
+	auto const pTechno = DrawAirstrikeFlareTemp::pTechno;
+	// 自定义颜色，点的颜色与此处相同
+	AirstrikeData* data = INI::GetConfig<AirstrikeData>(INI::Rules, pTechno->GetTechnoType()->ID)->Data;
+	auto const baseColor = data->AirstrikeLineColor;
+	double percentage = Random::RandomRanged(745, 1000) / 1000.0; // 随机色差
+	// Debug::Log(" - 绘制空袭光纤颜色: {%d, %d, %d} %d\n", baseColor.R, baseColor.G, baseColor.B, percentage);
+	color = { (BYTE)(baseColor.R * percentage), (BYTE)(baseColor.G * percentage), (BYTE)(baseColor.B * percentage) };
+	R->ESI(Drawing::RGB_To_Int(baseColor));
+
+	return SkipGameCode;
+}
+
+// Always draw the dot and skip setting color, it is already done in previous hook.
+DEFINE_HOOK(0x70597A, TechnoClass_DrawAirstrikeFlare_DotColor, 0x6)
+{
+	enum { SkipGameCode = 0x7059C7 };
+
+	GET_STACK(int, xCoord, STACK_OFFSET(0x70, -0x38));
+
+	// Restore overridden instructions.
+	R->ECX(xCoord);
+
+	return SkipGameCode;
 }
 
 // 更新被空袭时的闪光变化
 DEFINE_HOOK(0x70E92F, TechnoClass_Update_Airstrike_Tint_Timer, 0x5)
 {
+	enum { ContinueTintIntensity = 0x70E96E, NonAirstrike = 0x70EC9F };
+
 	GET(TechnoClass*, pTechno, ESI);
 	TechnoStatus* status = nullptr;
 	if (TryGetStatus<TechnoExt>(pTechno, status) && status->AnyAirstrike())
 	{
-		return 0x70E96E;
+		return ContinueTintIntensity;
 	}
-	return 0;
+	return NonAirstrike;
+}
+
+DEFINE_HOOK(0x43F9E0, BuildingClass_Mark_Airstrike, 0x6)
+{
+	enum { ContinueTintIntensity = 0x43FA0F, NonAirstrike = 0x43FA19 };
+
+	GET(BuildingClass*, pThis, EDI);
+	TechnoStatus* status = nullptr;
+	if (TryGetStatus<TechnoExt>(pThis, status) && status->AnyAirstrike())
+	{
+		return ContinueTintIntensity;
+	}
+	return NonAirstrike;
+}
+
+DEFINE_HOOK(0x448DF1, BuildingClass_SetOwningHouse_Airstrike, 0x6)
+{
+	enum { ContinueTintIntensity = 0x448E0D, NonAirstrike = 0x448E17 };
+
+	GET(BuildingClass*, pThis, ESI);
+	TechnoStatus* status = nullptr;
+	if (TryGetStatus<TechnoExt>(pThis, status) && status->AnyAirstrike())
+	{
+		return ContinueTintIntensity;
+	}
+	return NonAirstrike;
+}
+
+DEFINE_HOOK(0x451ABC, BuildingClass_PlayAnim_Airstrike, 0x6)
+{
+	enum { ContinueTintIntensity = 0x451AEB, NonAirstrike = 0x451AF5 };
+
+	GET(BuildingClass*, pThis, ESI);
+	TechnoStatus* status = nullptr;
+	if (TryGetStatus<TechnoExt>(pThis, status) && status->AnyAirstrike())
+	{
+		return ContinueTintIntensity;
+	}
+	return NonAirstrike;
+}
+
+DEFINE_HOOK(0x452041, BuildingClass_452000_Airstrike, 0x6)
+{
+	enum { ContinueTintIntensity = 0x452070, NonAirstrike = 0x45207A };
+
+	GET(BuildingClass*, pThis, ESI);
+	TechnoStatus* status = nullptr;
+	if (TryGetStatus<TechnoExt>(pThis, status) && status->AnyAirstrike())
+	{
+		return ContinueTintIntensity;
+	}
+	return NonAirstrike;
+}
+
+DEFINE_HOOK(0x456E5A, BuildingClass_Flash_Airstrike, 0x6)
+{
+	enum { ContinueTintIntensity = 0x456E89, NonAirstrike = 0x456E93 };
+
+	GET(BuildingClass*, pThis, ESI);
+	TechnoStatus* status = nullptr;
+	if (TryGetStatus<TechnoExt>(pThis, status) && status->AnyAirstrike())
+	{
+		return ContinueTintIntensity;
+	}
+	return NonAirstrike;
 }
 
 DEFINE_HOOK(0x43D390, BuildingClass_DrawSHP_LaserTargetColor_Skip, 0x6)
@@ -327,3 +583,4 @@ DEFINE_HOOK(0x73BFA4, UnitClass_DrawVXL_Tint_Airstrike, 0x6)
 	return skip;
 }
 
+#pragma endregion

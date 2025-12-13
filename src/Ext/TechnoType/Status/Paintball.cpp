@@ -60,7 +60,7 @@ void TechnoStatus::DrawSHP_Paintball_BuildingAnim(REGISTERS* R)
 		}
 		else
 		{
-			R->EBP(Drawing::RGB_To_Int(airstrikeData->AirstrikeTargetLaserColor));
+			R->EBP(Drawing::RGB_To_Int(airstrikeData->AirstrikeLineColor));
 		}
 	}
 	if (pTechno->Berzerk)
@@ -107,7 +107,7 @@ void TechnoStatus::DrawSHP_Colour(REGISTERS* R)
 			}
 			else
 			{
-				R->EAX(Drawing::RGB_To_Int(airstrikeData->AirstrikeTargetLaserColor));
+				R->EAX(Drawing::RGB_To_Int(airstrikeData->AirstrikeLineColor));
 			}
 		}
 		// Berzerk, 建筑不支持狂暴染色
@@ -148,7 +148,7 @@ void TechnoStatus::DrawVXL_Paintball(REGISTERS* R, bool isBuilding)
 			}
 			else
 			{
-				R->Stack(0x24, Drawing::RGB_To_Int(airstrikeData->AirstrikeTargetLaserColor));
+				R->Stack(0x24, Drawing::RGB_To_Int(airstrikeData->AirstrikeLineColor));
 			}
 		}
 		if (pTechno->Berzerk) // paint color to building's anim
@@ -171,7 +171,7 @@ void TechnoStatus::DrawVXL_Paintball(REGISTERS* R, bool isBuilding)
 			}
 			else
 			{
-				R->ESI(Drawing::RGB_To_Int(airstrikeData->AirstrikeTargetLaserColor));
+				R->ESI(Drawing::RGB_To_Int(airstrikeData->AirstrikeLineColor));
 			}
 		}
 	}

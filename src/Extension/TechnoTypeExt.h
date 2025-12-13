@@ -27,6 +27,8 @@ public:
 		bool ChronoTrigger = true;
 		int ChronoMinimumDelay = 0;
 		int ChronoRangeMinimum = 0;
+		bool AllowAirstrike = true; // 空袭是否允许该类型单位为目标
+
 
 		// Kratos
 		CoordStruct CarryallOffset{ 0, 0, Unsorted::LevelHeight };
@@ -51,6 +53,8 @@ public:
 			ChronoTrigger = reader->Get("ChronoTrigger", rules->ChronoTrigger);
 			ChronoMinimumDelay = reader->Get("ChronoMinimumDelay", rules->ChronoMinimumDelay);
 			ChronoRangeMinimum = reader->Get("ChronoRangeMinimum", rules->ChronoRangeMinimum);
+			AllowAirstrike = reader->Get("CanC4", AllowAirstrike); // 默认值与CanC4相同
+			AllowAirstrike = reader->Get("AllowAirstrike", AllowAirstrike);
 
 			CarryallOffset = reader->Get("Carryall.Offset", CarryallOffset);
 			CarryallImage = reader->Get("Carryall.Image", CarryallImage);

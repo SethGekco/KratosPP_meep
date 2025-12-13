@@ -13,7 +13,7 @@ class AirstrikeData : public INIConfig
 public:
 
 	int AirstrikeTargetLaser = -1;
-	ColorStruct AirstrikeTargetLaserColor = Colors::Red;
+	ColorStruct AirstrikeLineColor = Colors::Red;
 
 	bool AirstrikeDisableLine = false;
 	bool AirstrikeDisableColor = false;
@@ -23,21 +23,35 @@ public:
 
 	virtual void Read(INIBufferReader* reader) override
 	{
-		AirstrikeTargetLaser = reader->Get("AirstrikeTargetLaser", AirstrikeTargetLaser);
+		// 读全局
+		INIBufferReader* avReader = INI::GetSection(INI::Rules, INI::SectionAudioVisual);
+		AirstrikeTargetLaser = avReader->Get("AirstrikeTargetLaser", AirstrikeTargetLaser);
 		if (AirstrikeTargetLaser >= 0)
 		{
-			AirstrikeTargetLaserColor = Drawing::Int_To_RGB(Add2RGB565(RulesClass::Instance->ColorAdd[AirstrikeTargetLaser]));
+			AirstrikeLineColor = Drawing::Int_To_RGB(Add2RGB565(RulesClass::Instance->ColorAdd[AirstrikeTargetLaser]));
 		}
 		else
 		{
-			AirstrikeTargetLaserColor = Drawing::Int_To_RGB(Add2RGB565(RulesClass::Instance->ColorAdd[RulesClass::Instance->LaserTargetColor]));
+			AirstrikeLineColor = Drawing::Int_To_RGB(Add2RGB565(RulesClass::Instance->ColorAdd[RulesClass::Instance->LaserTargetColor]));
 		}
-		AirstrikeTargetLaserColor = reader->Get("AirstrikeTargetLaserColor", AirstrikeTargetLaserColor);
-
 		AirstrikeDisableLine = reader->Get("AirstrikeDisableLine", AirstrikeDisableLine);
 		AirstrikeDisableColor = reader->Get("AirstrikeDisableColor", AirstrikeDisableColor);
 		AirstrikeDisableBlink = reader->Get("AirstrikeDisableBlink", AirstrikeDisableBlink);
+		AirstrikePutOffset = reader->Get("AirstrikePutOffset", AirstrikePutOffset);
 
+		// 读个体
+		AirstrikeTargetLaser = reader->Get("AirstrikeTargetLaser", AirstrikeTargetLaser);
+		if (AirstrikeTargetLaser >= 0)
+		{
+			AirstrikeLineColor = Drawing::Int_To_RGB(Add2RGB565(RulesClass::Instance->ColorAdd[AirstrikeTargetLaser]));
+		}
+		else
+		{
+			AirstrikeLineColor = Drawing::Int_To_RGB(Add2RGB565(RulesClass::Instance->ColorAdd[RulesClass::Instance->LaserTargetColor]));
+		}
+		AirstrikeDisableLine = reader->Get("AirstrikeDisableLine", AirstrikeDisableLine);
+		AirstrikeDisableColor = reader->Get("AirstrikeDisableColor", AirstrikeDisableColor);
+		AirstrikeDisableBlink = reader->Get("AirstrikeDisableBlink", AirstrikeDisableBlink);
 		AirstrikePutOffset = reader->Get("AirstrikePutOffset", AirstrikePutOffset);
 	}
 };

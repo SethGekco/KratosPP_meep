@@ -96,6 +96,9 @@ public:
 	float DeactivateDimEMP = 0.8f;
 	float DeactivateDimPowered = 0.5f;
 
+	// Phobos
+	int AirstrikeLineZAdjust = 0;
+
 	// Kratos
 	bool AllowMakeVoxelDebrisByKratos = true;
 
@@ -106,6 +109,8 @@ public:
 	{
 		DeactivateDimEMP = reader->Get("DeactivateDimEMP", DeactivateDimEMP);
 		DeactivateDimPowered = reader->Get("DeactivateDimPowered", DeactivateDimPowered);
+
+		AirstrikeLineZAdjust = reader->Get("AirstrikeLineZAdjust", AirstrikeLineZAdjust);
 
 		AllowMakeVoxelDebrisByKratos = reader->Get("AllowMakeVoxelDebrisByKratos", AllowMakeVoxelDebrisByKratos);
 
