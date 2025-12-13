@@ -29,6 +29,7 @@ public:
 		bool BoltDisable2 = false;
 		bool BoltDisable3 = false;
 		bool BoltDisableParticle = false;
+		bool IsSingleColor = false; // 单色激光
 
 		// Kratos
 		float RockerPitch = 0;
@@ -60,6 +61,8 @@ public:
 			BoltDisable2 = reader->Get("Bolt.Disable2", BoltDisable2);
 			BoltDisable3 = reader->Get("Bolt.Disable3", BoltDisable3);
 			BoltDisableParticle = reader->Get("Bolt.DisableParticle", BoltDisableParticle);
+
+			IsSingleColor = reader->Get("IsSingleColor", IsSingleColor);
 
 			RockerPitch = reader->Get("RockerPitch", RockerPitch);
 			SelfLaunch = reader->Get("SelfLaunch", SelfLaunch);

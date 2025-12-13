@@ -9,6 +9,8 @@
 #include <Utilities/GeneralUtils.h>
 #include <Utilities/Macro.h>
 
+#include <Extension/WeaponTypeExt.h>
+
 namespace LaserDrawTemp
 {
 	ColorStruct maxColor;
@@ -48,4 +50,22 @@ DEFINE_HOOK(0x550F47, LaserDrawClass_DrawInHouseColor_BetterDrawing, 0x0)
 	R->EDX(b);
 
 	return 0x550F9D;
+}
+
+// Allow drawing single color lasers with thickness.
+DEFINE_HOOK(0x6FD446, TechnoClass_LaserZap_IsSingleColor, 0x7)
+{
+	GET(WeaponTypeClass* const, pWeapon, ECX);
+	GET(LaserDrawClass* const, pLaser, EAX);
+
+	WeaponTypeExt::TypeData* weaponData = GetTypeData<WeaponTypeExt, WeaponTypeExt::TypeData>(pWeapon);
+	if (!pLaser->IsHouseColor && weaponData->IsSingleColor)
+	{
+		pLaser->IsHouseColor = true;
+	}
+
+	// Fixes drawing thick lasers for non-PrismSupport building-fired lasers.
+	pLaser->IsSupported = pLaser->Thickness > 3;
+
+	return 0;
 }

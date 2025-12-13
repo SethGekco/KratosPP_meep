@@ -384,12 +384,18 @@ void DrawBulletEffect(WeaponTypeClass* pWeapon, CoordStruct sourcePos, CoordStru
 		laser.Duration = pWeapon->LaserDuration;
 		// get thickness and fade
 		WeaponTypeExt::TypeData* data = GetTypeData<WeaponTypeExt, WeaponTypeExt::TypeData>(pWeapon);
+		// 单一颜色
+		if (laser.IsHouseColor || data->IsSingleColor)
+		{
+			laser.IsHouseColor = true;
+			laser.OuterColor = Colors::Empty;
+		}
 		if (data->LaserThickness > 0)
 		{
 			laser.Thickness = data->LaserThickness;
 		}
 		laser.Fade = data->LaserFade;
-		laser.IsSupported = data->IsSupported;
+		laser.IsSupported = data->IsSupported || laser.Thickness > 3;
 		// draw the laser
 		DrawLaser(laser, sourcePos, targetPos, houseColor);
 	}
