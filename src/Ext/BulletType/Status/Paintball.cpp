@@ -23,6 +23,19 @@ void BulletStatus::OnUpdate_Paintball()
 		MyPaintData.ChangeColor = data.ChangeColor;
 		MyPaintData.ChangeBright = data.ChangeBright;
 		MyPaintData.Data = data;
+		if (data.ChangeColor && data.IsHouseColor)
+		{
+			// 使用所属色
+			HouseClass* pHouse = Paintball->pAEHouse;
+			if (!pHouse)
+			{
+				pHouse = pBullet->GetOwningHouse();
+			}
+			if (pHouse)
+			{
+				MyPaintData.Data.SetColor(pHouse->LaserColor);
+			}
+		}
 	}
 	else
 	{
