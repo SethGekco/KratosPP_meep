@@ -10,6 +10,7 @@
 
 #include <Extension/TechnoExt.h>
 
+#include <Ext/Common/CommonStatus.h>
 #include <Ext/TechnoType/TechnoStatus.h>
 
 #pragma region Building explosion anims
@@ -78,3 +79,27 @@ DEFINE_HOOK(0x453E02, BuildingClass_Clear_Occupy_Spot_Skip, 0x6)
 	return 0;
 }
 
+#pragma region BuildingWaypoints
+
+static bool __fastcall BuildingTypeClass_CanUseWaypoint(BuildingTypeClass* pThis)
+{
+	return General::Data()->BuildingWaypoints;
+}
+DEFINE_FUNCTION_JUMP(VTABLE, 0x7E4610, BuildingTypeClass_CanUseWaypoint)
+
+DEFINE_HOOK(0x4AE95E, DisplayClass_sub_4AE750_DisallowBuildingNonAttackPlanning, 0x5)
+{
+	enum { SkipGameCode = 0x4AE982 };
+
+	GET(ObjectClass* const, pObject, ECX);
+	LEA_STACK(CellStruct*, pCell, STACK_OFFSET(0x20, 0x8));
+
+	const auto action = pObject->MouseOverCell(pCell);
+
+	if (!PlanningNodeClass::PlanningModeActive || pObject->WhatAmI() != AbstractType::Building || action == Action::Attack)
+		pObject->CellClickedAction(action, pCell, pCell, false);
+
+	return SkipGameCode;
+}
+
+#pragma endregion

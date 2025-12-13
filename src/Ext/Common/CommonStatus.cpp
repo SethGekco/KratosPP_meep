@@ -1,5 +1,7 @@
 #include "CommonStatus.h"
 
-CombatDamageData *CombatDamage::_data = nullptr;
+GeneralData* General::_data = nullptr;
+
+CombatDamageData* CombatDamage::_data = nullptr;
 
 AudioVisualData *AudioVisual::_data = nullptr;

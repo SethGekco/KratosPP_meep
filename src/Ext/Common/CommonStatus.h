@@ -11,11 +11,16 @@ public:
 	CoordStruct NoHelipadPutOffset{};
 	bool ForcePutOffset = false;
 
+	// Phobos
+	bool BuildingWaypoints = false; // 允许建筑使用路径点
+
 	virtual void Read(INIBufferReader* reader) override
 	{
 		PadAircraft = reader->GetList("PadAircraft", PadAircraft);
 		NoHelipadPutOffset = reader->Get("AircraftNoHelipadPutOffset", NoHelipadPutOffset);
 		ForcePutOffset = reader->Get("AircraftForcePutOffset", ForcePutOffset);
+
+		BuildingWaypoints = reader->Get("BuildingWaypoints", BuildingWaypoints);
 	}
 };
 
