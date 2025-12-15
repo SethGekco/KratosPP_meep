@@ -52,6 +52,12 @@ bool PaintballState::NeedPaint(bool& changeColor, bool& changeBright)
 	return changeColor || changeBright;
 }
 
+void PaintballState::SyncPaintball()
+{
+	// 同步状态给组内其他Paintball
+	PaintballSyncManager::GetInstance().Sync(this->thisName, this);
+}
+
 void PaintballState::OnInitState(bool replace)
 {
 	PaintballData* data = GetInitData();

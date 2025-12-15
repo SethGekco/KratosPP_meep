@@ -55,6 +55,7 @@
     <ClCompile Include="src\Ext\Common\CommonStatus.cpp" />
     <ClCompile Include="src\Ext\Common\ExpandAnimsManager.cpp" />
     <ClCompile Include="src\Ext\Common\FireSuperManager.cpp" />
+    <ClCompile Include="src\Ext\Common\PaintballSyncManager.cpp" />
     <ClCompile Include="src\Ext\Common\PrintTextManager.cpp" />
     <ClCompile Include="src\Ext\EBoltType\EBoltStatus.cpp" />
     <ClCompile Include="src\Ext\EffectType\AttachEffectScript.cpp" />
@@ -246,6 +247,7 @@
     <ClInclude Include="src\Ext\Common\ExpandAnimsData.h" />
     <ClInclude Include="src\Ext\Common\ExpandAnimsManager.h" />
     <ClInclude Include="src\Ext\Common\FireSuperManager.h" />
+    <ClInclude Include="src\Ext\Common\PaintballSyncManager.h" />
     <ClInclude Include="src\Ext\Common\PrintTextData.h" />
     <ClInclude Include="src\Ext\Common\PrintTextManager.h" />
     <ClInclude Include="src\Ext\EBoltType\EBoltStatus.h" />
@@ -478,7 +480,7 @@
       <ConformanceMode>true</ConformanceMode>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <OmitFramePointers>true</OmitFramePointers>
-      <PreprocessorDefinitions>DEBUG;DEBUG_COMPONENT;SYR_VER=2;HAS_EXCEPTIONS=0;NOMINMAX;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;%(PreprocessorDefinitions);%(AdditionalDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;SYR_VER=2;HAS_EXCEPTIONS=0;NOMINMAX;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;%(PreprocessorDefinitions);%(AdditionalDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>

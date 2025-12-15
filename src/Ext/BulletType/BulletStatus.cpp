@@ -253,10 +253,10 @@ void BulletStatus::OnUpdate()
 	if (!IsDeadOrInvisible(pBullet, this))
 	{
 		OnUpdate_BlackHole();
-		OnUpdate_GiftBox();
 		OnUpdate_Paintball();
 		OnUpdate_RecalculateStatus();
 		OnUpdate_SelfLaunchOrPumpAction();
+		OnUpdate_GiftBox(); // 礼盒会删除对象，所以要放最后
 	}
 }
 

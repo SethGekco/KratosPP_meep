@@ -409,24 +409,24 @@ public:
 				aresVersus.Retaliate = reader->Get("Versus." + armorName + ".Retaliate", aresVersus.Retaliate);
 				aresVersus.PassiveAcquire = reader->Get("Versus." + armorName + ".PassiveAcquire", aresVersus.PassiveAcquire);
 			}
-#ifdef DEBUG
-			// 输出调试信息
-			Debug::Log("%s Versus values:\n", reader->Section.c_str());
-			for (size_t i = 0; i < Versus.size(); ++i)
-			{
-				Armor armor = (Armor)i;
-				const std::string& name = GetArmorName(armor);
-				Debug::Log("  %d - %s: %.2f\n", i, name.c_str(), Versus[i]);
-			}
-			Debug::Log("%s AresVersus values:\n", reader->Section.c_str());
-			for (size_t i = 0; i < armorValues.size(); ++i)
-			{
-				const std::string& name = armorValues[i].first;
-				const AresVersus& value = AresVersusArray[i];
-				Debug::Log("  %d - %s: %.2f, %d, %d, %d\n",
-					i + 11, name.c_str(), value.Versus, value.ForceFire, value.Retaliate, value.PassiveAcquire);
-			}
-#endif // DEBUG
+// #ifdef DEBUG
+// 			// 输出调试信息
+// 			Debug::Log("%s Versus values:\n", reader->Section.c_str());
+// 			for (size_t i = 0; i < Versus.size(); ++i)
+// 			{
+// 				Armor armor = (Armor)i;
+// 				const std::string& name = GetArmorName(armor);
+// 				Debug::Log("  %d - %s: %.2f\n", i, name.c_str(), Versus[i]);
+// 			}
+// 			Debug::Log("%s AresVersus values:\n", reader->Section.c_str());
+// 			for (size_t i = 0; i < armorValues.size(); ++i)
+// 			{
+// 				const std::string& name = armorValues[i].first;
+// 				const AresVersus& value = AresVersusArray[i];
+// 				Debug::Log("  %d - %s: %.2f, %d, %d, %d\n",
+// 					i + 11, name.c_str(), value.Versus, value.ForceFire, value.Retaliate, value.PassiveAcquire);
+// 			}
+// #endif // DEBUG
 		}
 	};
 

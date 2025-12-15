@@ -277,7 +277,7 @@ DEFINE_HOOK(0x6B796A, SpawnManagerClass_Update_PutSpawns_FireOnce, 0x5)
 // 如果子机管理器输入的预设目标在天上，自动开启跟踪模式
 DEFINE_HOOK(0x6B7A32, SpawnManagerClass_Update_Add_Missile_Target, 0x5)
 {
-	GET(SpawnManagerClass*, pManager, ESI);
+	// GET(SpawnManagerClass*, pManager, ESI);
 	GET(TechnoClass*, pRocket, ECX);
 	GET(AbstractClass*, pTarget, EAX); // 预设目标，pManager->Destination，之后会通过KamikazeTrackerClass_Add写入Node->Cell
 

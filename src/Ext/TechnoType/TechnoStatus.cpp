@@ -199,10 +199,10 @@ void TechnoStatus::OnUpdate()
 		OnUpdate_BlackHole();
 		OnUpdate_Deselect();
 		OnUpdate_Freeze();
-		OnUpdate_GiftBox();
 		OnUpdate_Paintball();
 		OnUpdate_Passenger();
 		OnUpdate_TargetLaser();
+		OnUpdate_GiftBox(); // 礼盒会删除对象，所以放最后
 	}
 }
 

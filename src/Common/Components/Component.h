@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <functional>
 #include <typeinfo>
@@ -264,7 +264,7 @@ public:
 	/// 失活组件，使其跳过执行Foreach逻辑
 	/// </summary>
 	virtual void Deactivate() { _active = false; }
-	virtual bool IsActive() { return _active; }
+	virtual bool IsActive() const { return _active; }
 #pragma endregion
 
 #pragma region foreach
@@ -295,8 +295,10 @@ public:
 			if (maxLevel < 0 || nextLevel < maxLevel)
 			{
 				// 执行子模块
-				for (Component* c : _children)
+				std::vector<Component*> childrenCopy = _children; // 复制一份，防止遍历过程中修改_children导致问题
+				for (Component* c : childrenCopy)
 				{
+					if (!c) continue;
 					c->ForeachLevel(action, nextLevel, maxLevel);
 					if (c->IsBreak())
 					{
@@ -317,14 +319,19 @@ public:
 	template<typename F>
 	void ForeachChild(F action, bool force = false)
 	{
-		for (Component* c : _children)
+		std::vector<Component*> childrenCopy = _children; // 复制一份，防止遍历过程中修改_children导致问题
+		for (Component* c : childrenCopy)
 		{
-			action(c);
-			if (!force)
+			if (!c) continue;
+			if (c->IsAwaked() && c->IsActive())
 			{
-				if (c->IsBreak())
+				action(c);
+				if (!force)
 				{
-					break;
+					if (c->IsBreak())
+					{
+						break;
+					}
 				}
 			}
 		}

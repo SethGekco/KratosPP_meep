@@ -5,6 +5,8 @@
 #include <ShipLocomotionClass.h>
 #include <WalkLocomotionClass.h>
 
+#include <Ext/Common/PaintballSyncManager.h>
+
 #include <Ext/Helper/FLH.h>
 #include <Ext/Helper/Gift.h>
 #include <Ext/Helper/Scripts.h>
@@ -81,7 +83,17 @@ TechnoStatus* StandEffect::SetupStandStatus()
 			TechnoStatus* masterStatus = nullptr;
 			if (pTechno->Owner == AE->pSourceHouse && TryGetStatus<TechnoExt>(pTechno, masterStatus))
 			{
-				status->_Paintball = masterStatus->Paintball;
+				// 每个TechnoStatus都有一个独立的Paintball，只能值同步，不可以指针同步
+				// status->_Paintball = masterStatus->Paintball;
+
+				// 使用Master的Paintball的thisName作为同步ID
+				std::string syncId = masterStatus->Paintball->thisName;
+				// 注册到同步管理器
+				PaintballSyncManager::GetInstance().Register(syncId, masterStatus->Paintball);
+				PaintballSyncManager::GetInstance().Register(syncId, status->Paintball);
+
+				// 立即同步一次
+				PaintballSyncManager::GetInstance().Sync(syncId, masterStatus->Paintball);
 			}
 			if (IsAircraft())
 			{

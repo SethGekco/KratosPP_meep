@@ -6,6 +6,7 @@
 #include "../StateScript.h"
 #include "PaintballData.h"
 
+#include <Ext/Common/PaintballSyncManager.h>
 #include <Ext/TechnoType/DamageText.h>
 
 class PaintballState : public StateScript<PaintballData>
@@ -17,14 +18,31 @@ public:
 
 	bool NeedPaint(bool& changeColor, bool& changeBright);
 
+	void SyncPaintball();
+
 	virtual void Clean() override
 	{
+		// 重要：在Clean之前解除同步注册
+		// 因为Clean()会改变InstanceId，从而改变thisName
+		PaintballSyncManager::GetInstance().Unregister(this);
+
 		StateScript<PaintballData>::Clean();
 
 		_rgbMode = false;
 		_rgbIdx = 0;
 		_rgbTimer = {};
 	}
+
+	virtual void OnStart() override
+	{
+		SyncPaintball();
+	};
+
+	virtual void OnEnd() override
+	{
+		SyncPaintball();
+	};
+
 
 	virtual void OnInitState(bool replace) override;
 

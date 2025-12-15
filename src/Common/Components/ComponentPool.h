@@ -97,6 +97,7 @@ public:
 	{
 		if (!component) return;
 
+		component->Clean();  // 重置状态
 		component->~T();
 		DeallocateRaw(typeid(T), component);
 	}
