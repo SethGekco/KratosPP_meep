@@ -102,4 +102,12 @@ void ComponentPool::ClearAll()
 		pool.totalCreated = 0;
 		pool.totalReused = 0;
 	}
+
+	Debug::Log("Cleared all Component pools.\n");
 }
+
+void ComponentPool::Clear(EventSystem* sender, Event e, void* args)
+{
+	GetInstance().ClearAll();
+}
+

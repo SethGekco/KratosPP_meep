@@ -19,12 +19,26 @@
 #define VERSION_REVISION 0
 
 // Indicates Kratos-related bugfixes only
-#define VERSION_PATCH 0
+#define VERSION_PATCH 1
 
 #pragma endregion
 
 // Build number. Incremented on each released build.
 #define BUILD_NUMBER 1
+
+// Helper macros for version string formatting
+#ifdef DEBUG
+	#define VERSION_SHORT_STR "Debug " STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_REVISION)
+	#define VERSION_SHORT_WSTR L"Debug " WSTR(VERSION_MAJOR) L"." WSTR(VERSION_MINOR) L"." WSTR(VERSION_REVISION)
+#else // Release build
+	#if VERSION_PATCH == 0
+		#define VERSION_SHORT_STR "Ver." STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_REVISION)
+		#define VERSION_SHORT_WSTR L"Ver." WSTR(VERSION_MAJOR) L"." WSTR(VERSION_MINOR) L"." WSTR(VERSION_REVISION)
+	#else
+		#define VERSION_SHORT_STR "Ver." STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_REVISION) "p" STR(VERSION_PATCH)
+		#define VERSION_SHORT_WSTR L"Ver." WSTR(VERSION_MAJOR) L"." WSTR(VERSION_MINOR) L"." WSTR(VERSION_REVISION) L"p" WSTR(VERSION_PATCH)
+	#endif // VERSION_PATCH
+#endif // DEBUG
 
 // version infomation
 #define PRODUCT_NAME "Kratos"
@@ -43,11 +57,4 @@
 #define INTERNAL_NAME "Kratos.dll"
 #define ORIGINAL_FILENAME "Kratos.dll"
 
-#ifdef DEBUG
-	#define VERSION_SHORT_STR "Debug " STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_REVISION)
-	#define VERSION_SHORT_WSTR L"Debug " WSTR(VERSION_MAJOR) L"." WSTR(VERSION_MINOR) L"." WSTR(VERSION_REVISION)
-#else // Release build
-	#define VERSION_SHORT_STR "Ver." STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_REVISION)
-	#define VERSION_SHORT_WSTR L"Ver." WSTR(VERSION_MAJOR) L"." WSTR(VERSION_MINOR) L"." WSTR(VERSION_REVISION)
-#endif // DEBUG
 #endif // VERSION_H

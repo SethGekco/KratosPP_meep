@@ -6,6 +6,8 @@
 #include <map>
 #include <typeindex>
 
+#include <Common/EventSystems/EventSystem.h>
+
 #include <Utilities/Debug.h>
 
 // 前置声明
@@ -21,6 +23,8 @@ public:
 	Component* Create(const std::string& name);
 
 	void ClearAll();
+
+	static void Clear(EventSystem* sender, Event e, void* args);
 
 	// 从对象池获取组件
 	template<typename T>

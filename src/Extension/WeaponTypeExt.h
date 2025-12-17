@@ -93,6 +93,7 @@ public:
 				.Process(this->BoltDisable2)
 				.Process(this->BoltDisable3)
 				.Process(this->BoltDisableParticle)
+				.Process(this->IsSingleColor)
 
 				.Process(this->RockerPitch)
 				.Process(this->SelfLaunch)

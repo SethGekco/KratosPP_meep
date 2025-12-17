@@ -483,7 +483,6 @@ public:
 	virtual bool Load(ExStreamReader& stream, bool registerForChange) override
 	{
 		Component::Load(stream, registerForChange);
-		Debug::Log("TechnoStatus::Load() called and myMaster = %p\n", this->pMyMaster);
 		bool res = this->Serialize(stream);
 		if (MyStandData.Enable)
 		{
@@ -503,7 +502,6 @@ public:
 	virtual bool Save(ExStreamWriter& stream) const override
 	{
 		Component::Save(stream);
-		Debug::Log("TechnoStatus::Save() called and myMaster = %p\n", this->pMyMaster);
 		return const_cast<TechnoStatus*>(this)->Serialize(stream);
 	}
 #pragma endregion

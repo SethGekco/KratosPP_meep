@@ -76,7 +76,7 @@ void PaintballSyncManager::Sync(const std::string& sourceId, const PaintballStat
  * @param paintball Paintball
  * @return 源ID，如果未注册返回空字符串
  */
-std::string PaintballSyncManager::GetSource(PaintballState* paintball) const
+std::string PaintballSyncManager::GetSource(PaintballState* paintball)
 {
 	auto it = _paintballToSource.find(paintball);
 	if (it != _paintballToSource.end())
@@ -91,7 +91,7 @@ std::string PaintballSyncManager::GetSource(PaintballState* paintball) const
  * @param paintball Paintball
  * @return 是否已注册
  */
-bool PaintballSyncManager::IsRegistered(PaintballState* paintball) const
+bool PaintballSyncManager::IsRegistered(PaintballState* paintball)
 {
 	return _paintballToSource.find(paintball) != _paintballToSource.end();
 }
@@ -99,9 +99,19 @@ bool PaintballSyncManager::IsRegistered(PaintballState* paintball) const
 /**
  * @brief 清空所有注册
  */
-void PaintballSyncManager::Clear()
+void PaintballSyncManager::ClearAll()
 {
 	_sourceToPaintball.clear();
 	_paintballToSource.clear();
 }
 
+void PaintballSyncManager::Clear(EventSystem* sender, Event e, void* args)
+{
+	ClearAll();
+}
+
+// 源ID -> 注册的Paintball集合
+std::unordered_map<std::string, std::unordered_set<PaintballState*>> PaintballSyncManager::_sourceToPaintball{};
+
+// Paintball -> 源ID（用于快速查找）
+std::unordered_map<PaintballState*, std::string> PaintballSyncManager::_paintballToSource{};

@@ -564,7 +564,7 @@ public:
 #ifdef DEBUG_COMPONENT
 		if (!this->_children.empty())
 		{
-			std::string s1 = "Saved _childrenInstanceIds: ";
+			std::string s1 = "Load _childrenInstanceIds: ";
 			for (Component* c : this->_children)
 			{
 				s1.append(c->InstanceId).append(", ");
@@ -575,7 +575,11 @@ public:
 #endif
 
 			// 读取每个子组件的内容
-			this->ForeachChild([&stream, &registerForChange](Component* c) { c->Load(stream, registerForChange); });
+			// this->ForeachChild([&stream, &registerForChange](Component* c) { c->Load(stream, registerForChange); }); // ForeachChild会跳过未激活组件
+			for (Component* c : this->_children)
+			{
+				c->Load(stream, registerForChange);
+			}
 		}
 		return loaded;
 	}
@@ -587,14 +591,11 @@ public:
 		// 生成子组件清单
 		pThis->_childrenNames.clear();
 		pThis->_childrenInstanceIds.clear();
-		for (Component* c : pThis->_children)
-		{
-			if (!c->IsDisabling())
-			{
-				pThis->_childrenNames.push_back(c->Name);
-				pThis->_childrenInstanceIds.push_back(c->InstanceId);
-			}
-		}
+		// 重要：需要与储存的子组件用一样的条件
+		pThis->ForeachChild([&pThis](Component* c) {
+			pThis->_childrenNames.push_back(c->Name);
+			pThis->_childrenInstanceIds.push_back(c->InstanceId);
+			});
 
 #ifdef DEBUG_COMPONENT
 		if (!pThis->_childrenInstanceIds.empty())
@@ -610,9 +611,7 @@ public:
 
 		bool saved = pThis->Serialize(stream, false);
 		// 存入每个子组件的内容
-		pThis->ForeachChild([&stream](Component* c) {
-			c->Save(stream);
-			});
+		pThis->ForeachChild([&stream](Component* c) { c->Save(stream); });
 		return saved;
 	}
 #pragma endregion

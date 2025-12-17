@@ -89,11 +89,11 @@ TechnoStatus* StandEffect::SetupStandStatus()
 				// 使用Master的Paintball的thisName作为同步ID
 				std::string syncId = masterStatus->Paintball->thisName;
 				// 注册到同步管理器
-				PaintballSyncManager::GetInstance().Register(syncId, masterStatus->Paintball);
-				PaintballSyncManager::GetInstance().Register(syncId, status->Paintball);
+				PaintballSyncManager::Register(syncId, masterStatus->Paintball);
+				PaintballSyncManager::Register(syncId, status->Paintball);
 
 				// 立即同步一次
-				PaintballSyncManager::GetInstance().Sync(syncId, masterStatus->Paintball);
+				PaintballSyncManager::Sync(syncId, masterStatus->Paintball);
 			}
 			if (IsAircraft())
 			{

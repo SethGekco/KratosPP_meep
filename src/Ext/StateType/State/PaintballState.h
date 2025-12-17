@@ -24,7 +24,7 @@ public:
 	{
 		// 重要：在Clean之前解除同步注册
 		// 因为Clean()会改变InstanceId，从而改变thisName
-		PaintballSyncManager::GetInstance().Unregister(this);
+		PaintballSyncManager::Unregister(this);
 
 		StateScript<PaintballData>::Clean();
 
