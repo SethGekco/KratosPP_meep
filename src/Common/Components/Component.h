@@ -351,14 +351,31 @@ public:
 	template<typename F>
 	void ForeachChild(F action, bool force = false)
 	{
-		for (Component* c : _children)
+		for (size_t i = 0; i < _children.size(); ++i)
 		{
+			Component* c = _children[i];
 			if (!c) continue;
-			if (c->IsAwaked() and c->IsEnable())
+			// 检查组件是否仍在列表中，可能被移除
+			if (i >= _children.size())
 			{
+				Debug::Log("Error: Component %s child [<%zu>] is removed during ForeachChild!\n", thisName.c_str(), i);
+				break;
+			}
+			if (_children[i] != c)
+			{
+				Debug::Log("Error: Component %s child [<%zu>] has changed during ForeachChild!\n", thisName.c_str(), i);
+				continue;
+			}
+			if (force)
+			{
+				Debug::Log("ForeachChild force action for %s\n", c->thisName.c_str());
 				action(c);
-				if (!force)
+			}
+			else
+			{
+				if (c->IsAwaked() && c->IsEnable())
 				{
+					action(c);
 					if (c->IsBreak())
 					{
 						break;
@@ -366,6 +383,21 @@ public:
 				}
 			}
 		}
+		// for (Component* c : _children)
+		// {
+		// 	if (!c) continue;
+		// 	if (c->IsAwaked() and c->IsEnable())
+		// 	{
+		// 		action(c);
+		// 		if (!force)
+		// 		{
+		// 			if (c->IsBreak())
+		// 			{
+		// 				break;
+		// 			}
+		// 		}
+		// 	}
+		// }
 	}
 
 	void Break() { _break = true; }

@@ -90,15 +90,9 @@ void MissileHoming::OnUpdate()
 		if (pLoco)
 		{
 			// 目标可能在准备阶段就死了，不论如何首先记录下最后的位置
-			if (HomingTarget)
+			if (HomingTarget && HomingTargetLocation.IsEmpty())
 			{
 				HomingTargetLocation = HomingTarget->GetCoords();
-			}
-			else
-			{
-				// 目标消失，关闭追踪
-				IsHoming = false;
-				HomingTarget = nullptr;
 			}
 			if (pLoco->MissionState > 2)
 			{
