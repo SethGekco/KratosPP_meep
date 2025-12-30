@@ -316,10 +316,10 @@ public:
 		Name = reader->Section;
 
 
-		int druation = reader->Get("Duration", Duration);
-		if (druation != 0)
+		int duration = reader->Get("Duration", Duration);
+		if (duration != 0)
 		{
-			Duration = druation;
+			Duration = duration;
 
 			EffectData::Read(reader, title);
 
@@ -327,7 +327,7 @@ public:
 
 			Enable = !GetScriptNames().empty();
 
-			HoldDuration = Duration <= 0;
+			HoldDuration = Duration == -1; // 只允许-1为特殊值，否则持续时间必须大于0
 			HoldDuration = reader->Get("HoldDuration", HoldDuration);
 
 			Delay = reader->Get("Delay", Delay);

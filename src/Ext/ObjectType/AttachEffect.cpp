@@ -422,12 +422,14 @@ void AttachEffect::Attach(AttachEffectData data,
 		}
 		bool find = false;
 		CoordStruct location = _location;
+		std::string group = data.Group;
+		bool hasGroup = IsNotNone(group);
 		// 检查持续时间，增减Duration
-		ForeachChild([&find, &add, &isAttackMark, &isHouseMark, &data, &pAttacker, &pAttackingHouse, &location](Component* c) {
+		ForeachChild([&find, &add, &isAttackMark, &isHouseMark, &hasGroup, &group, &data, &pAttacker, &pAttackingHouse, &location](Component* c) {
 			auto temp = dynamic_cast<AttachEffectScript*>(c);
 			if (temp && temp->IsAlive())
 			{
-				if (!IsNotNone(data.Group))
+				if (!hasGroup)
 				{
 					// 无分组，攻击者标记叠加，或同名重置计时器
 					if (temp->AEData.Name == data.Name)
@@ -484,7 +486,8 @@ void AttachEffect::Attach(AttachEffectData data,
 				else
 				{
 					// 有分组，替换或者调整持续时间
-					if (temp->IsSameGroup(data))
+					std::string tempGroup = temp->AEData.Group;
+					if (IsNotNone(tempGroup) && group == tempGroup)
 					{
 						// 找到了同组
 						find = true;
@@ -514,7 +517,7 @@ void AttachEffect::Attach(AttachEffectData data,
 			}
 			});
 		// 没找到同类或同组，可以添加新的实例
-		add = add || !find;
+		add = (add || !find) && (!hasGroup || data.HoldDuration || data.GetDuration() > 0);
 	}
 	// 可以添加AE，开始执行添加动作
 	if (add && data.GetDuration() != 0 && StackNotFull(data))
