@@ -14,14 +14,18 @@ void DrawLaser(LaserType laser, CoordStruct sourcePos, CoordStruct targetPos, Co
 		innerColor = houseColor;
 		outerColor = Colors::Empty;
 	}
+	if (laser.IsSingleColor)
+	{
+		outerColor = Colors::Empty;
+	}
 	LaserDrawClass* pLaser = GameCreate<LaserDrawClass>(
 		sourcePos, targetPos,
 		innerColor, outerColor, laser.OuterSpread,
 		laser.Duration);
 
 	pLaser->Thickness = laser.Thickness;
-	pLaser->IsHouseColor = laser.Fade ? laser.Fade : laser.IsHouseColor;
-	pLaser->IsSupported = laser.IsSupported ? laser.IsSupported : (laser.Thickness > 5 && !laser.Fade);
+	pLaser->IsHouseColor = laser.Fade || laser.IsSingleColor || laser.IsHouseColor;
+	pLaser->IsSupported = laser.IsSupported || (laser.Thickness > 5 && !laser.Fade);
 }
 
 void DrawLaser(CoordStruct sourcePos, CoordStruct targetPos, ColorStruct innerColor, ColorStruct outerColor, int thickness, int duration)

@@ -18,6 +18,7 @@ public:
 	bool IsHouseColor = false;
 	bool IsSupported = false;
 	bool Fade = true;
+	bool IsSingleColor = false;
 
 	std::vector<ColorStruct> ColorList{};
 	bool ColorListRandom = false;
