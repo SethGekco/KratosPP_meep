@@ -165,4 +165,12 @@ void CounterEffect::ModifyCount(CounterData delta)
 		CountNum *= delta.Num;
 		break;
 	}
+	if (CountNum < Data.Min)
+	{
+		CountNum = Data.Min;
+	}
+	if (Data.Max >= 0 && CountNum > Data.Max)
+	{
+		CountNum = Data.Max;
+	}
 }

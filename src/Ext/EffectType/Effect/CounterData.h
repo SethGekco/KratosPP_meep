@@ -64,6 +64,8 @@ public:
 
 	std::string Mark{};
 	int Num = 0;
+	int Min = 0;
+	int Max = -1;
 	CounterAction Action = CounterAction::ADD;
 	bool RemoveWhenZero = true;
 	bool ResetNum = false;
@@ -98,6 +100,8 @@ public:
 
 		Mark = reader->Get(title + "Mark", Mark);
 		Num = reader->Get(title + "Num", Num);
+		Min = reader->Get(title + "Min", Min);
+		Max = reader->Get(title + "Max", Max);
 		Action = reader->Get(title + "Action", Action);
 		RemoveWhenZero = reader->Get(title + "RemoveWhenZero", RemoveWhenZero);
 		ResetNum = reader->Get(title + "ResetNum", ResetNum);
@@ -139,6 +143,8 @@ public:
 		return stream
 			.Process(this->Mark)
 			.Process(this->Num)
+			.Process(this->Min)
+			.Process(this->Max)
 			.Process(this->Action)
 			.Process(this->RemoveWhenZero)
 			.Process(this->ResetNum)
