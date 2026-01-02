@@ -56,6 +56,12 @@ void TechnoStatus::OnReceiveDamageDestroy_Transform()
 		ChangeTechnoTypeTo(pSourceType);
 		_hasBeenChanged = false;
 		_transformLocked = true;
+
+		// 在天上，但不会飞
+		if (pTechno->IsInAir() && !pSourceType->ConsideredAircraft)
+		{
+			pTechno->DropAsBomb();
+		}
 	}
 }
 
