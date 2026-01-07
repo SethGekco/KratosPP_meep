@@ -57,6 +57,46 @@ inline bool Parser<CounterAction>::TryParse(const char* pValue, CounterAction* o
 	}
 }
 
+enum class CounterReaction : int
+{
+	NORMAL = 0,
+	HITPOINT = 1,
+	SHIELD = 2,
+};
+
+template <>
+inline bool Parser<CounterReaction>::TryParse(const char* pValue, CounterReaction* outValue)
+{
+	switch (toupper(static_cast<unsigned char>(*pValue)))
+	{
+	case 'H':
+		if (outValue)
+		{
+			*outValue = CounterReaction::HITPOINT;
+		}
+		return true;
+	case 'S':
+		if (outValue)
+		{
+			*outValue = CounterReaction::SHIELD;
+		}
+		return true;
+	default:
+		if (outValue)
+		{
+			*outValue = CounterReaction::NORMAL;
+		}
+		return true;
+	}
+}
+
+enum class CounterType : int
+{
+	Number = 0,
+	HP = 1,
+	MaxHP = 2,
+};
+
 class CounterEntity
 {
 public:
@@ -91,11 +131,59 @@ public:
 #pragma endregion
 };
 
-enum class CounterType : int
+class CounterReactionEntity
 {
-	Number = 0,
-	HP = 1,
-	MaxHP = 2,
+public:
+	double Protect = 1;
+	double Percent = 1;
+
+	std::vector<std::string> OnlyReactionWarheads{};
+	std::vector<std::string> NotReactionWarheads{};
+
+	virtual void Read(INIBufferReader* reader, std::string title)
+	{
+		Protect = reader->GetPercent(title + "Protect", Protect);
+		Protect = std::clamp(Protect, 0.0, 1.0);
+		Percent = reader->GetPercent(title + "Percent", Percent);
+		Percent = std::max(0.0, Percent);
+
+		OnlyReactionWarheads = reader->GetList(title + "OnlyReactionWarheads", OnlyReactionWarheads);
+		ClearIfGetNone(OnlyReactionWarheads);
+
+		NotReactionWarheads = reader->GetList(title + "NotReactionWarheads", NotReactionWarheads);
+		ClearIfGetNone(NotReactionWarheads);
+	}
+
+	bool WarheadOnMark(std::string whID)
+	{
+		if (!OnlyReactionWarheads.empty())
+		{
+			return std::find(OnlyReactionWarheads.begin(), OnlyReactionWarheads.end(), whID) != OnlyReactionWarheads.end();
+		}
+		return true;
+	}
+#pragma region save/load
+	template <typename T>
+	bool Serialize(T& stream)
+	{
+		return stream
+			.Process(this->Protect)
+			.Process(this->Percent)
+			.Process(this->OnlyReactionWarheads)
+			.Process(this->NotReactionWarheads)
+
+			.Success();
+	};
+
+	virtual bool Load(ExStreamReader& stream, bool registerForChange)
+	{
+		return this->Serialize(stream);
+	}
+	virtual bool Save(ExStreamWriter& stream) const
+	{
+		return const_cast<CounterReactionEntity*>(this)->Serialize(stream);
+	}
+#pragma endregion
 };
 
 class CounterData : public EffectData
@@ -115,6 +203,10 @@ public:
 	bool AttachIfNotFound = true;
 
 	std::vector<CounterEntity> RemoveWhenNums{}; // 触发效果列表
+
+	CounterReaction ReactionMode = CounterReaction::NORMAL;
+
+	CounterReactionEntity Reaction{};
 
 	virtual void Read(INIBufferReader* reader) override
 	{
@@ -183,6 +275,10 @@ public:
 			}
 		}
 
+		ReactionMode = reader->Get(title + "Reaction", ReactionMode);
+		ReactionMode = reader->Get(title + "ReactionMode", ReactionMode);
+		Reaction.Read(reader, title + "Reaction.");
+
 		Enable = IsNotNone(Mark);
 	}
 
@@ -204,6 +300,9 @@ public:
 			.Process(this->Max)
 			.Process(this->Action)
 			.Process(this->RemoveWhenNums)
+
+			.Process(this->ReactionMode)
+			.Process(this->Reaction)
 
 			.Success();
 	};

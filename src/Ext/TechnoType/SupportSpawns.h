@@ -9,6 +9,8 @@
 
 #include "SupportSpawnsData.h"
 
+class AttachEffect;
+
 /// @brief 动态载入组件
 class SupportSpawns : public TechnoScript
 {
@@ -65,6 +67,8 @@ public:
 
 private:
 	void Setup();
+
+	AttachEffect* AEManager();
 
 	void FireSupportWeaponToSpawn(bool checkROF = false);
 

@@ -196,9 +196,10 @@ public:
 		bool Teleporter = false; // 弹头传送标记
 		bool Capturer = false; // 弹头黑洞捕获标记
 		bool IgnoreRevenge = false; // 不触发复仇
-		bool IgnoreDamageReaction = false; // 不触发伤害相应
-		std::vector<DamageReactionMode> IgnoreDamageReactionModes{}; // 不触发特定的伤害相应类型
+		bool IgnoreDamageReaction = false; // 不触发伤害响应
+		std::vector<DamageReactionMode> IgnoreDamageReactionModes{}; // 不触发特定的伤害响应类型
 		bool IgnoreStandShareDamage = false; // 替身不分担伤害
+		bool IgnoreCounterReaction = false; // 不触发计数器响应
 
 		virtual void Read(INIBufferReader* reader) override
 		{
@@ -257,6 +258,7 @@ public:
 				IgnoreDamageReaction = true;
 			}
 			IgnoreStandShareDamage = reader->Get("IgnoreStandShareDamage", IgnoreStandShareDamage);
+			IgnoreCounterReaction = reader->Get("IgnoreCounterReaction", IgnoreCounterReaction);
 		}
 
 		double GetVersus(Armor armor, bool& forceFire, bool& retaliate, bool& passiveAcquire)

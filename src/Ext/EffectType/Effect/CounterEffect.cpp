@@ -5,6 +5,8 @@
 #include <Ext/Helper/Scripts.h>
 #include <Ext/Helper/Status.h>
 
+#include <Extension/WarheadTypeExt.h>
+
 void CounterEffect::Watch()
 {
 	// 计数器归零时移除
@@ -20,6 +22,33 @@ void CounterEffect::Watch()
 			}
 		}
 	}
+}
+
+int CounterEffect::CalculateRemainingDamage(int Damage)
+{
+	if (Damage <= 0) return 0;
+
+	// 如果保护比例或百分比无效，返回原伤害
+	if (Data->Reaction.Protect <= 0.0 || Data->Reaction.Percent <= 0.0)
+		return Damage;
+
+	// 需要CountNum抵扣的伤害部分
+	double protectedPart = Damage * Data->Reaction.Protect;
+	// 这部分伤害需要的CountNum
+	double requiredCount = protectedPart * Data->Reaction.Percent;
+
+	// 实际可用的CountNum
+	double actualUsed = std::min(CountNum, requiredCount);
+
+	// 更新CountNum
+	ModifyCount(CounterAction::SUB, actualUsed);
+
+	// 实际抵扣的伤害
+	double actualProtectedDamage = actualUsed / Data->Reaction.Percent;
+	int intProtectedDamage = static_cast<int>(std::round(actualProtectedDamage));
+
+	// 最终伤害 = 原伤害 - 实际抵扣的伤害
+	return std::max(0, Damage - intProtectedDamage);
 }
 
 void CounterEffect::AddSelfToManager()
@@ -71,6 +100,31 @@ void CounterEffect::OnWarpUpdate()
 	if (!AE->OwnerIsDead())
 	{
 		Watch();
+	}
+}
+
+void CounterEffect::OnReceiveDamage(args_ReceiveDamage* args)
+{
+	if (AE->OwnerIsDead())
+	{
+		return;
+	}
+
+	// 无视防御的真实伤害不做任何响应
+	if (!args->IgnoreDefenses && Data->ReactionMode != CounterReaction::NORMAL)
+	{
+		WarheadTypeClass* pWH = args->WH;
+		WarheadTypeExt::TypeData* whData = GetTypeData<WarheadTypeExt, WarheadTypeExt::TypeData>(pWH);
+		if (!whData->IgnoreCounterReaction && Data->Reaction.WarheadOnMark(pWH->ID))
+		{
+			// 扣除计数并返回抵扣后的伤害值
+			int damage = CalculateRemainingDamage(*args->Damage);
+			// 抵扣伤害
+			if (Data->ReactionMode == CounterReaction::SHIELD)
+			{
+				*args->Damage = damage;
+			}
+		}
 	}
 }
 

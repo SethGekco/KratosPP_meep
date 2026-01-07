@@ -9,9 +9,10 @@ void TechnoStatus::OnUpdate_DestroySelf()
 	if (DestroySelf->AmIDead() && !IsDead(pTechno) && (DestroySelf->Data.InTransport || !pTechno->Transporter))
 	{
 		// 通知AE管理器
-		if (AEManager())
+		AttachEffect* aeManager = AEManager();
+		if (aeManager)
 		{
-			AEManager()->OnDestroySelf();
+			aeManager->OnDestroySelf();
 		}
 		// 啊我死了
 		if (DestroySelf->Data.Peaceful)

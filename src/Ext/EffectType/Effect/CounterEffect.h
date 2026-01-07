@@ -38,6 +38,8 @@ public:
 	virtual void OnUpdate() override;
 	virtual void OnWarpUpdate() override;
 
+	virtual void OnReceiveDamage(args_ReceiveDamage* args) override;
+
 	void ModifyCount(CounterAction action, int num);
 	void ResetNum();
 	void RemoveCounter();
@@ -69,6 +71,8 @@ public:
 #pragma endregion
 private:
 	void Watch();
+
+	int CalculateRemainingDamage(int Damage);
 
 	void AddSelfToManager();
 	void RemoveSelfFromManager();

@@ -6,6 +6,8 @@
 #include <Ext/Helper/Weapon.h>
 #include <Ext/Helper/Scripts.h>
 
+#include <Ext/ObjectType/AttachEffect.h>
+
 SupportSpawnsData* SupportSpawns::GetSupportSpawnsData()
 {
 	if (!_data)
@@ -45,6 +47,16 @@ void SupportSpawns::Setup()
 	}
 }
 
+AttachEffect* SupportSpawns::AEManager()
+{
+	AttachEffect* aeManager = nullptr;
+	if (_parent)
+	{
+		aeManager = _parent->GetComponent<AttachEffect>();
+	}
+	return aeManager;
+}
+
 void SupportSpawns::FireSupportWeaponToSpawn(bool checkROF)
 {
 	SupportSpawnsData* data = GetSupportSpawnsData();
@@ -66,6 +78,10 @@ void SupportSpawns::FireSupportWeaponToSpawn(bool checkROF)
 			hitFLH = flhData->EliteSupportWeaponHitFLH;
 		}
 	}
+	TechnoClass* pAttacker = pTechno->SpawnOwner;
+	HouseClass* pAttackingHouse = pAttacker->Owner;
+	TechnoClass* pTarget = pTechno;
+	TechnoClass* pShooter = WhoIsShooter(pAttacker);
 	if (!weapons.empty())
 	{
 		if (data->SwitchFLH)
@@ -75,10 +91,7 @@ void SupportSpawns::FireSupportWeaponToSpawn(bool checkROF)
 		}
 		bool isOnTurret = data->IsOnTurret;
 		bool turnTurret = data->TurnTurret;
-		TechnoClass* pAttacker = pTechno->SpawnOwner;
-		HouseClass* pAttackingHouse = pAttacker->Owner;
-		TechnoClass* pTarget = pTechno;
-		TechnoClass* pShooter = WhoIsShooter(pAttacker);
+
 		for (std::string weaponId : weapons)
 		{
 			if (IsNotNone(weaponId))
@@ -133,6 +146,15 @@ void SupportSpawns::FireSupportWeaponToSpawn(bool checkROF)
 					}
 				}
 			}
+		}
+	}
+	if (data->Attach)
+	{
+		// 给自己附加AE
+		AttachEffect* aeManager = AEManager();
+		if (aeManager)
+		{
+			aeManager->Attach(data->AttachEffects, data->AttachChances, false, pAttacker, pAttackingHouse);
 		}
 	}
 }

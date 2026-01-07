@@ -16,6 +16,9 @@ public:
 	bool IsOnTurret = true;
 	bool TurnTurret = false;
 
+	bool Attach = false;
+	std::vector<std::string> AttachEffects{};
+	std::vector<double> AttachChances{};
 
 	virtual void Read(INIBufferReader* reader) override
 	{
@@ -35,7 +38,12 @@ public:
 		IsOnTurret = reader->Get(title + "IsOnTurret", IsOnTurret);
 		TurnTurret = reader->Get(title + "TurnTurret", TurnTurret);
 
-		Enable = !Weapons.empty() || !EliteWeapons.empty();
+		AttachEffects = reader->GetList(title + "AttachEffects", AttachEffects);
+		ClearIfGetNone(AttachEffects);
+		AttachChances = reader->GetChanceList(title + "AttachChances", AttachChances);
+		Attach = !AttachEffects.empty();
+
+		Enable = !Weapons.empty() || !EliteWeapons.empty() || Attach;
 	}
 
 #pragma region save/load
@@ -49,6 +57,9 @@ public:
 			.Process(this->AlwaysFire)
 			.Process(this->IsOnTurret)
 			.Process(this->TurnTurret)
+			.Process(this->Attach)
+			.Process(this->AttachEffects)
+			.Process(this->AttachChances)
 			.Success();
 	};
 
