@@ -32,8 +32,15 @@ int CounterEffect::CalculateRemainingDamage(int Damage)
 	if (Data->Reaction.Protect <= 0.0 || Data->Reaction.Percent <= 0.0)
 		return Damage;
 
+	// 抵扣伤害上限
+	int damageToProtect = Damage;
+	if (Data->Reaction.Limit > 0 && damageToProtect > Data->Reaction.Limit)
+	{
+		damageToProtect = Data->Reaction.Limit;
+	}
+
 	// 需要CountNum抵扣的伤害部分
-	double protectedPart = Damage * Data->Reaction.Protect;
+	double protectedPart = damageToProtect * Data->Reaction.Protect;
 	// 这部分伤害需要的CountNum
 	double requiredCount = protectedPart * Data->Reaction.Percent;
 
@@ -42,7 +49,7 @@ int CounterEffect::CalculateRemainingDamage(int Damage)
 
 	// Debug::Log("CounterEffect::CalculateRemainingDamage(), Mark: %s, AE: %s, damage = %d, protectedPart = %.2f(%.2f), requiredCount = %.2f(%.2f), actualUsed = %.2f, CountNum = %.2f\n",
 	// 	AEData.Counter.Mark.c_str(), AEData.Name.c_str()
-	// 	, Damage, protectedPart, Data->Reaction.Protect, requiredCount, Data->Reaction.Percent
+	// 	, damage, protectedPart, Data->Reaction.Protect, requiredCount, Data->Reaction.Percent
 	// 	, actualUsed, CountNum);
 
 	// 更新CountNum

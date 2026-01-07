@@ -134,6 +134,8 @@ public:
 class CounterReactionEntity
 {
 public:
+	int Limit = -1;
+
 	double Protect = 1;
 	double Percent = 1;
 
@@ -142,6 +144,8 @@ public:
 
 	virtual void Read(INIBufferReader* reader, std::string title)
 	{
+		Limit = reader->Get(title + "Limit", Limit);
+
 		Protect = reader->GetPercent(title + "Protect", Protect);
 		Protect = std::clamp(Protect, 0.0, 1.0);
 		Percent = reader->GetPercent(title + "Percent", Percent);
@@ -167,6 +171,8 @@ public:
 	bool Serialize(T& stream)
 	{
 		return stream
+			.Process(this->Limit)
+
 			.Process(this->Protect)
 			.Process(this->Percent)
 			.Process(this->OnlyReactionWarheads)
