@@ -280,7 +280,7 @@ public:
 
 	virtual void OnUpdate() override;
 
-	void OnUpdate_DeployTo(); // call by hook
+	void OnUpdate_DeployTo();
 	void OnUpdate_DestroySelf(); // call by Stand
 
 	virtual void OnUpdateEnd() override;

@@ -397,6 +397,8 @@ void DrawBulletEffect(WeaponTypeClass* pWeapon, CoordStruct sourcePos, CoordStru
 		laser.RandomColor = weaponData->LaserRandomColor;
 		// 视觉散布
 		laser.VisualScatter = weaponData->VisualScatter;
+		laser.VisualScatterMin = weaponData->VisualScatterMin;
+		laser.VisualScatterMax = weaponData->VisualScatterMax;
 		// draw the laser
 		DrawLaser(laser, sourcePos, targetPos, houseColor);
 	}
@@ -414,6 +416,8 @@ void DrawBulletEffect(WeaponTypeClass* pWeapon, CoordStruct sourcePos, CoordStru
 			weaponData = GetTypeData<WeaponTypeExt, WeaponTypeExt::TypeData>(pWeapon);
 		}
 		type.VisualScatter = weaponData->VisualScatter;
+		type.VisualScatterMin = weaponData->VisualScatterMin;
+		type.VisualScatterMax = weaponData->VisualScatterMax;
 		DrawBeam(sourcePos, targetPos, type);
 	}
 	// IsElectricBolt

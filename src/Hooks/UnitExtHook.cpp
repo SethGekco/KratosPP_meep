@@ -26,7 +26,14 @@ DEFINE_HOOK(0x6FF8F1, TechnoClass_DeployFire, 0x6)
 	GET(TechnoClass*, pTechno, ESI);
 	if (TechnoStatus* status = GetStatus<TechnoExt, TechnoStatus>(pTechno))
 	{
-		status->DeployState = DeployState::Deployed;
+		if (status->DeployState == DeployState::Deploying)
+		{
+			status->DeployState = DeployState::Deployed;
+		}
+		else if (status->DeployState == DeployState::Undeploying)
+		{
+			status->DeployState = DeployState::Undeployed;
+		}
 	}
 	return 0;
 }
