@@ -12,6 +12,7 @@ public:
 	bool Blade = false;
 	int Arm = 128;
 	int ZOffset = Unsorted::LevelHeight;
+	CoordStruct POffset = CoordStruct::Empty;
 	bool AffectsOwner = false;
 	bool AffectsAllies = false;
 	bool AffectsEnemies = true;
@@ -30,6 +31,7 @@ public:
 		Blade = reader->Get("Proximity.Blade", Blade);
 		Arm = reader->Get("Proximity.Arm", Arm);
 		ZOffset = reader->Get("Proximity.ZOffset", ZOffset);
+		POffset = reader->Get("Proximity.POffset", POffset);
 		AffectsOwner = reader->Get("Proximity.AffectsOwner", AffectsOwner);
 		AffectsAllies = reader->Get("Proximity.AffectsAllies", AffectsAllies);
 		AffectsEnemies = reader->Get("Proximity.AffectsEnemies", AffectsEnemies);

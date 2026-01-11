@@ -58,7 +58,14 @@ void BulletStatus::OnUpdateEnd_Proximity(CoordStruct& sourcePos)
 	// 计算碰触引信
 	if (_proximity.active && !_proximity.IsSafe())
 	{
-		if (CellClass* pSourceCell = MapClass::Instance->TryGetCellAt(sourcePos))
+		ProximityData* data = GetProximityData();
+		CoordStruct checkPos = sourcePos; // 碰撞检测的原点，默认为抛射体当前位置
+		// 调整碰撞检测点位置
+		if (!data->POffset.IsEmpty())
+		{
+			checkPos = GetFLHAbsoluteCoords(pBullet, data->POffset);
+		}
+		if (CellClass* pSourceCell = MapClass::Instance->TryGetCellAt(checkPos))
 		{
 			// 读取预定目标格子上的建筑
 			CellClass* pSourceTargetCell = MapClass::Instance->TryGetCellAt(pBullet->TargetCoords);
@@ -69,14 +76,13 @@ void BulletStatus::OnUpdateEnd_Proximity(CoordStruct& sourcePos)
 				// Logger.Log($"{Game.CurrentFrame} 导弹预定目标格子中有建筑 {pSourceTargetBuilding}");
 			}
 			// 当前所处的位置距离预定飞行目标过近，且在同一格内，跳过碰撞检测
-			if (sourcePos.DistanceFrom(pBullet->TargetCoords) <= 256)
+			if (checkPos.DistanceFrom(pBullet->TargetCoords) <= 256)
 			{
 				if (pSourceCell == pSourceTargetCell)
 				{
 					return;
 				}
 			}
-			ProximityData* data = GetProximityData();
 			// 计算碰撞的半径，超过1格，确定搜索范围
 			int cellSpread = (data->Arm / 256) + 1;
 			// 每个格子只检查一次
@@ -86,7 +92,7 @@ void BulletStatus::OnUpdateEnd_Proximity(CoordStruct& sourcePos)
 				CoordStruct cellPos = pSourceCell->GetCoordsWithBridge();
 				CellStruct currentCell = pSourceCell->MapCoords;
 				// 获取这个格子上的所有对象
-				std::vector<TechnoClass*> pTechnoList = GetCellSpreadTechnos(currentCell, sourcePos, cellSpread,
+				std::vector<TechnoClass*> pTechnoList = GetCellSpreadTechnos(currentCell, checkPos, cellSpread,
 					data->Blade, data->Blade || data->Arm > Unsorted::LevelHeight, false,
 					pSourceHouse,
 					data->AffectsOwner, data->AffectsAllies, data->AffectsEnemies, data->AffectsEnemies);
@@ -103,7 +109,7 @@ void BulletStatus::OnUpdateEnd_Proximity(CoordStruct& sourcePos)
 							if (BuildingClass* pBuilding = dynamic_cast<BuildingClass*>(pTarget))
 							{
 								// 检查建筑在范围内
-								hit = CanHit(pBuilding, sourcePos.Z, data->Blade, data->ZOffset);
+								hit = CanHit(pBuilding, checkPos.Z, data->Blade, data->ZOffset);
 								// 检查建筑是否被炸过
 								if (hit && data->PenetrationBuildingOnce)
 								{
@@ -116,7 +122,7 @@ void BulletStatus::OnUpdateEnd_Proximity(CoordStruct& sourcePos)
 							// 使用抛射体所经过的格子的中心点作为判定原点
 							CoordStruct sourceTestPos = cellPos;
 							// 判定原点抬升至与抛射体同高
-							sourceTestPos.Z = sourcePos.Z;
+							sourceTestPos.Z = checkPos.Z;
 							// 目标点在脚下，加上高度修正偏移值
 							CoordStruct targetTestPos = targetPos + CoordStruct{ 0, 0, data->ZOffset };
 							if (data->Blade)
