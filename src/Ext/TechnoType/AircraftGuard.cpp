@@ -214,6 +214,8 @@ bool AircraftGuard::CheckTarget(TechnoClass* pTarget)
 	HouseClass* pTargetHouse = pTarget->Owner;
 	if (!IsDeadOrInvisibleOrCloaked(pTarget)
 		&& !pTarget->GetTechnoType()->Insignificant
+		&& !pTargetHouse->IsAlliedWith(pHouse) // 本身不是盟友
+		// 伪装后也不是盟友
 		&& (!pTarget->IsDisguised() || pTarget->IsClearlyVisibleTo(pHouse) || (pTargetHouse = pTarget->GetDisguiseHouse(true)) != nullptr)
 		&& !pTargetHouse->IsAlliedWith(pHouse))
 	{
