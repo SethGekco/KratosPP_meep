@@ -8,8 +8,8 @@ class HouseExt : public GOExtension<HouseClass, HouseExt>
 {
 public:
 	static constexpr DWORD Canary = 0x11111111;
-	static constexpr size_t ExtPointerOffset = 0x16098;
-	static constexpr bool ShouldConsiderInvalidatePointer = true;
+	// static constexpr size_t ExtPointerOffset = 0x16098;
+	// static constexpr bool ShouldConsiderInvalidatePointer = true;
 
 	/// @brief 创建Component实例，并加入到GameObject中.
 	/// 创建时需要使用new，不能使用GameCreate.

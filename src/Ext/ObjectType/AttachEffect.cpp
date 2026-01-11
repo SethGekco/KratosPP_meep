@@ -674,7 +674,7 @@ bool AttachEffect::IsAvailable(AttachEffectData data)
 		for (auto& type : data.AuxBuildings)
 		{
 			BuildingTypeClass* pType = BuildingTypeClass::Find(type.c_str());
-			if (pObject->GetOwningHouse()->CountOwnedAndPresent(pType) > 0)
+			if (pType && pObject->GetOwningHouse()->CountOwnedAndPresent(pType) > 0)
 			{
 				auxFound = true;
 				break;
@@ -687,7 +687,7 @@ bool AttachEffect::IsAvailable(AttachEffectData data)
 		for (auto& type : data.NegBuildings)
 		{
 			BuildingTypeClass* pType = BuildingTypeClass::Find(type.c_str());
-			if (pObject->GetOwningHouse()->CountOwnedAndPresent(pType) > 0)
+			if (pType && pObject->GetOwningHouse()->CountOwnedAndPresent(pType) > 0)
 			{
 				return false;
 			}
