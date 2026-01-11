@@ -297,7 +297,24 @@ void ReleaseGifts(std::vector<std::string> gifts, GiftBoxEntity data, BoxStateCa
 							else if (boxState.IsTransfrom)
 							{
 								// 需要检查是否呆在原地不移动，比如原地变形，需要单独处理掉落/起飞
-								FallingDown(pGift, 0, false);
+								if (pGift->IsInAir())
+								{
+									if (!pGiftType->ConsideredAircraft)
+									{
+										// 不会飞的掉地上
+										FallingDown(pGift, 0, false);
+									}
+									else if (pGift->What_Am_I() == AbstractType::Aircraft)
+									{
+										// 会飞的动一下
+										CoordStruct scatterPos = CoordStruct::Empty;
+										if (pPutCell)
+										{
+											scatterPos = pPutCell->GetCoordsWithBridge();
+										}
+										pGift->Scatter(scatterPos, true, false);
+									}
+								}
 							}
 							scatter = true;
 						}
