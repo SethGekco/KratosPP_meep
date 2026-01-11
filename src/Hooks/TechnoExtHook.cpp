@@ -1023,6 +1023,44 @@ DEFINE_HOOK(0x54AED0, JumpjetLocomotionClass_Freeze, 0x5)
 	return 0;
 }
 
+// Disable DeployToLand=no forcing landing when idle due to what appears to be
+// a code oversight and no need for DeployToLand=no to work in vanilla game.
+DEFINE_HOOK(0x54BED4, JumpjetLocomotionClass_Hovering_DeployToLand, 0x7)
+{
+	enum { SkipGameCode = 0x54BEE0 };
+
+	GET(JumpjetLocomotionClass*, pThis, ESI);
+	GET(FootClass*, pLinkedTo, ECX);
+
+	auto const pType = pLinkedTo->GetTechnoType();
+
+	if (!pType->BalloonHover || pType->DeployToLand)
+		pThis->State = JumpjetLocomotionClass::State::Descending;
+
+	pLinkedTo->TryNextPlanningTokenNode();
+	return SkipGameCode;
+}
+
+// Same as above but at a different state.
+DEFINE_HOOK(0x54C2DF, JumpjetLocomotionClass_Cruising_DeployToLand, 0xA)
+{
+	enum { SkipGameCode = 0x54C4FD };
+
+	GET(JumpjetLocomotionClass*, pThis, ESI);
+	GET(FootClass*, pLinkedTo, ECX);
+
+	auto const pType = pLinkedTo->GetTechnoType();
+
+	if (!pType->BalloonHover || pType->DeployToLand)
+	{
+		pThis->CurrentHeight = 0;
+		pThis->State = JumpjetLocomotionClass::State::Descending;
+	}
+
+	pLinkedTo->TryNextPlanningTokenNode();
+	return SkipGameCode;
+}
+
 DEFINE_HOOK(0x54D600, JumpjetLocomotionClass_MovingUpdate_DontTurnInCell, 0x6)
 {
 	GET(JumpjetLocomotionClass*, pJJ, ESI);
