@@ -373,6 +373,35 @@ void InfoEffect::OnGScreenRenderEnd(CoordStruct location)
 				}
 			}
 		}
+		// 显示阴影位置
+		if (Data->Shadow.Mode != InfoMode::NONE && (Data->Shadow.ShowEnemy || isPlayerControl) && (!Data->Shadow.OnlySelected || isSelected))
+		{
+			CoordStruct shadowPos = sourcePos;
+			if (CellClass* pCell = MapClass::Instance()->TryGetCellAt(sourcePos))
+			{
+				CoordStruct targetPos = pCell->GetCoordsWithBridge();
+				shadowPos.Z = targetPos.Z;
+			}
+			Point2D pos2 = ToClientPos(shadowPos);
+			// 使用SHP绘制阴影位置
+			if (Data->Shadow.UseSHP)
+			{
+				if (SHPStruct* pCustomSHP = FileSystem::LoadSHPFile(Data->Shadow.SHPFileName.c_str()))
+				{
+					// 显示对应的帧
+					DSurface::Temp->DrawSHP(FileSystem::PALETTE_PAL.get(), pCustomSHP, Data->Shadow.ZeroFrameIndex, &pos2, &bounds);
+				}
+			}
+			else if (Data->Shadow.Color)
+			{
+				DrawCrosshair(DSurface::Temp, shadowPos, 128, Data->Shadow.Color, bounds, false);
+			}
+			// 绘制线条
+			if (Data->Shadow.Color)
+			{
+				DrawDashedLine(DSurface::Temp, pos, pos2, Data->Shadow.Color, bounds);
+			}
+		}
 	}
 }
 

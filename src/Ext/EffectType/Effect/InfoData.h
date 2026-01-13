@@ -183,6 +183,7 @@ public:
 	InfoEntity Cell{};
 	InfoEntity BodyDir{};
 	InfoEntity TurretDir{};
+	InfoEntity Shadow{};
 
 	InfoData() : EffectData()
 	{
@@ -192,6 +193,7 @@ public:
 		Cell.Color = { 0, 252, 0 };
 		BodyDir.Color = { 0, 252, 0 };
 		TurretDir.Color = { 0, 0, 252 };
+		Shadow.Color = { 0, 252, 0 };
 	}
 
 	virtual void Read(INIBufferReader* reader) override
@@ -227,6 +229,7 @@ public:
 		Cell.Read(reader, title + "Cell.", watch);
 		BodyDir.Read(reader, title + "BodyDir.", watch);
 		TurretDir.Read(reader, title + "TurretDir.", watch);
+		Shadow.Read(reader, title + "Shadow.", watch);
 
 		Enable = Duration.Mode != InfoMode::NONE
 			|| Delay.Mode != InfoMode::NONE
@@ -249,6 +252,7 @@ public:
 			|| Cell.Mode != InfoMode::NONE
 			|| BodyDir.Mode != InfoMode::NONE
 			|| TurretDir.Mode != InfoMode::NONE
+			|| Shadow.Mode != InfoMode::NONE
 			;
 	}
 
@@ -278,6 +282,7 @@ public:
 			.Process(this->Cell)
 			.Process(this->BodyDir)
 			.Process(this->TurretDir)
+			.Process(this->Shadow)
 
 			.Success();
 	};
