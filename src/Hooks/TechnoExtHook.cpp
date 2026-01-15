@@ -808,7 +808,8 @@ DEFINE_HOOK(0x6F36DB, TechnoClass_SelectWeapon, 0xA)
 			// 按距离筛选武器，PickWeaponIndex里对NavalTargeting和LandTargeting进行了检查，所以这里只用检查护甲
 			bool primaryCanAttack = CanAttack(pPrimary->Warhead, pTargetTechno);
 			bool secondaryCanAttack = CanAttack(pSecondary->Warhead, pTargetTechno);
-			if (pTarget->IsInAir())
+			bool targetInAir = pTarget->IsInAir();
+			if (targetInAir)
 			{
 				// 能不能对空
 				primaryCanAttack = primaryCanAttack && pPrimary->Projectile->AA;
@@ -824,7 +825,49 @@ DEFINE_HOOK(0x6F36DB, TechnoClass_SelectWeapon, 0xA)
 				}
 				else if (pTechno->IsCloseEnough(pTarget, 1))
 				{
-					return Primary; // 返回副武器
+					return Secondary; // 返回副武器
+				}
+				else
+				{
+					// 两个武器都不够近，强选需要移动距离更少的武器
+					int distance = pTechno->DistanceFrom(pTarget);
+					int rangePlus = GetRangePlus(pTechno, targetInAir);
+					int rangePrimary = pPrimary->Range + rangePlus;
+					int rangeSecondary = pSecondary->Range + rangePlus;
+					// 进入主武器射程需要移动的距离
+					int movePrimary = 0;
+					if (distance < pPrimary->MinimumRange)
+					{
+						movePrimary = pPrimary->MinimumRange - distance;
+					}
+					else if (distance > rangePrimary)
+					{
+						movePrimary = distance - rangePrimary;
+					}
+					// 进入副武器射程需要移动的距离
+					int moveSecondary = 0;
+					if (distance < pSecondary->MinimumRange)
+					{
+						moveSecondary = pSecondary->MinimumRange - distance;
+					}
+					else if (distance > rangeSecondary)
+					{
+						moveSecondary = distance - rangeSecondary;
+					}
+					// 选择移动距离最小的
+					if (movePrimary < moveSecondary)
+					{
+						return Primary; // 返回主武器
+					}
+					else if (moveSecondary < movePrimary)
+					{
+						return Secondary; // 返回副武器
+					}
+					else
+					{
+						// 移动距离相同，优先主武器
+						return rangePrimary >= rangeSecondary ? Primary : Secondary; // 返回射程最远的武器
+					}
 				}
 			}
 		}
