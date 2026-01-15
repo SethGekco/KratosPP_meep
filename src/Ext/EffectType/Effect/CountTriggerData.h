@@ -35,13 +35,14 @@ inline bool Parser<CountTriggerWho>::TryParse(const char* pValue, CountTriggerWh
 			*outValue = CountTriggerWho::COUNTER;
 		}
 		return true;
-	default:
+	case 'M':
 		if (outValue)
 		{
 			*outValue = CountTriggerWho::ME;
 		}
 		return true;
 	}
+	return false;
 }
 
 class CountTriggerEntity
