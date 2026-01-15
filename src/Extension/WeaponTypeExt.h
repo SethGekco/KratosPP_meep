@@ -35,6 +35,11 @@ public:
 		double visualScatterMax = 0.13;
 		int VisualScatterMin = Game::F2I(visualScatterMin * Unsorted::LeptonsPerCell);
 		int VisualScatterMax = Game::F2I(visualScatterMax * Unsorted::LeptonsPerCell);
+		AffectedTarget CanTarget = AffectedTarget::All;
+		AffectedHouse CanTargetHouses = AffectedHouse::All;
+		double CanTargetMinHealth = 0.0; // Phobos对低血量目标的筛选
+		double CanTargetMaxHealth = 1.0; // Phobos对高血量目标的筛选
+		bool SkipWeaponPicking = true; // 跳过强制武器选择
 
 		// Kratos
 		float RockerPitch = 0;
@@ -82,6 +87,17 @@ public:
 			VisualScatterMin = Game::F2I(visualScatterMin * Unsorted::LeptonsPerCell);
 			VisualScatterMax = Game::F2I(visualScatterMax * Unsorted::LeptonsPerCell);
 
+			CanTarget = reader->Get("CanTarget", CanTarget);
+			CanTargetHouses = reader->Get("CanTargetHouses", CanTargetHouses);
+			CanTargetMinHealth = reader->GetPercent("CanTarget.MinHealth", CanTargetMinHealth);
+			CanTargetMaxHealth = reader->GetPercent("CanTarget.MaxHealth", CanTargetMaxHealth);
+			if (CanTarget != AffectedTarget::All || CanTargetHouses != AffectedHouse::All
+				|| CanTargetMinHealth > 0.0 || CanTargetMaxHealth < 1.0)
+			{
+				// 至少启用了一种目标类型筛选，则不跳过武器选择
+				SkipWeaponPicking = false;
+			}
+
 			RockerPitch = reader->Get("RockerPitch", RockerPitch);
 			SelfLaunch = reader->Get("SelfLaunch", SelfLaunch);
 			PumpAction = reader->Get("PumpAction", PumpAction);
@@ -118,6 +134,8 @@ public:
 				.Process(this->visualScatterMax)
 				.Process(this->VisualScatterMin)
 				.Process(this->VisualScatterMax)
+				.Process(this->CanTarget)
+				.Process(this->CanTargetHouses)
 
 				.Process(this->RockerPitch)
 				.Process(this->SelfLaunch)

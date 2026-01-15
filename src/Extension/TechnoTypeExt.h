@@ -16,6 +16,8 @@ public:
 		bool Carryall = false;
 		int CarryallSizeLimit = -1;
 		bool CarryallAllowed = true;
+		int NoAmmoAmount = 0; // 弹药数量小于等于此值时切换无弹武器
+		int NoAmmoWeapon = -1; // 无弹药武器索引
 
 		// Phobos
 		CoordStruct TurretOffset = CoordStruct::Empty;
@@ -28,9 +30,12 @@ public:
 		int ChronoMinimumDelay = 0;
 		int ChronoRangeMinimum = 0;
 		bool AllowAirstrike = true; // 空袭是否允许该类型单位为目标
-
+		bool NoSecondaryWeaponFallback = false; // 禁用二级武器自动切换
+		bool NoSecondaryWeaponFallbackForAA = false; // 对防空禁用二级武器自动切换
+		bool AllowWeaponSelectAgainstWalls = false; // 允许对墙壁使用二级武器
 
 		// Kratos
+		bool SelectWeaponUseRange = false; // 按射程选择武器
 		CoordStruct CarryallOffset{ 0, 0, Unsorted::LevelHeight };
 		std::string CarryallImage{ "" };
 
@@ -40,6 +45,8 @@ public:
 			Carryall = reader->Get("Carryall", Carryall);
 			CarryallSizeLimit = reader->Get("Carryall.SizeLimit", CarryallSizeLimit);
 			CarryallAllowed = reader->Get("Carryall.Allowed", CarryallAllowed);
+			NoAmmoAmount = reader->Get("NoAmmoAmount", NoAmmoAmount);
+			NoAmmoWeapon = reader->Get("NoAmmoWeapon", NoAmmoWeapon);
 
 			TurretOffset = reader->Get("TurretOffset", TurretOffset);
 
@@ -55,7 +62,14 @@ public:
 			ChronoRangeMinimum = reader->Get("ChronoRangeMinimum", rules->ChronoRangeMinimum);
 			AllowAirstrike = reader->Get("CanC4", AllowAirstrike); // 默认值与CanC4相同
 			AllowAirstrike = reader->Get("AllowAirstrike", AllowAirstrike);
+			NoSecondaryWeaponFallback = reader->Get("NoSecondaryWeaponFallback", NoSecondaryWeaponFallback);
+			NoSecondaryWeaponFallbackForAA = reader->Get("NoSecondaryWeaponFallback.AllowAA", NoSecondaryWeaponFallbackForAA);
+			// INIBufferReader* avReader = INI::GetSection(INI::Rules, INI::SectionAudioVisual);
+			INIBufferReader* combatReader = INI::GetSection(INI::Rules, INI::SectionCombatDamage);
+			AllowWeaponSelectAgainstWalls = combatReader->Get("AllowWeaponSelectAgainstWalls", AllowWeaponSelectAgainstWalls);
+			AllowWeaponSelectAgainstWalls = reader->Get("AllowWeaponSelectAgainstWalls", AllowWeaponSelectAgainstWalls);
 
+			SelectWeaponUseRange = reader->Get("SelectWeaponUseRange", SelectWeaponUseRange);
 			CarryallOffset = reader->Get("Carryall.Offset", CarryallOffset);
 			CarryallImage = reader->Get("Carryall.Image", CarryallImage);
 		}

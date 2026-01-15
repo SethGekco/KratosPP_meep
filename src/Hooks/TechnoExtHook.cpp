@@ -19,6 +19,7 @@
 #include <Extension/WarheadTypeExt.h>
 
 #include <Ext/Helper/Scripts.h>
+#include <Ext/Helper/Weapon.h>
 
 #include <Ext/Common/CommonStatus.h>
 #include <Ext/Common/ExpandAnimsManager.h>
@@ -26,8 +27,6 @@
 #include <Ext/TechnoType/AutoFireAreaWeapon.h>
 #include <Ext/TechnoType/JumpjetCarryall.h>
 #include <Ext/TechnoType/TechnoStatus.h>
-
-#include <Ext/TechnoType/SelectWeaponData.h>
 
 // ----------------
 // Extension
@@ -782,17 +781,53 @@ DEFINE_HOOK(0x6FC833, TechnoClass_NavalTargeting, 0x7)
 	return 0;
 }
 
-DEFINE_HOOK(0x6F36DB, TechnoClass_SelectWeapon_AntiMissile, 0xA)
+DEFINE_HOOK(0x6F36DB, TechnoClass_SelectWeapon, 0xA)
 {
 	enum { Primary = 0x6F37AD, Secondary = 0x6F3807 };
 	GET(TechnoClass*, pTechno, ESI);
 	GET_STACK(AbstractClass*, pTarget, 0x1C);
 	GET_STACK(WeaponTypeClass*, pPrimary, 0x14);
 	GET_STACK(WeaponTypeClass*, pSecondary, 0x10);
-	GET(unsigned int, ebp, EBP);
-	if (ebp != 0)
+	GET(TechnoClass*, pTargetTechno, EBP);
+	if (pTargetTechno)
 	{
 		// 攻击的是单位
+		// Phobos在此处对目标进行强制武器筛选，要兼容就得复刻一套一样的逻辑
+		TechnoTypeExt::TypeData* typeData = GetTypeData<TechnoTypeExt, TechnoTypeExt::TypeData>(pTechno->GetTechnoType());
+		bool allowFallback = !typeData->NoSecondaryWeaponFallback;
+		bool allowAAFallback = allowFallback ? true : typeData->NoSecondaryWeaponFallbackForAA;
+		int weaponIndex = PickWeaponIndex(pTechno, pTargetTechno, pTarget, 0, 1, allowFallback, allowAAFallback);
+		if (weaponIndex != -1)
+		{
+			// 找到合适的武器，返回对应的武器
+			return weaponIndex == 0 ? Primary : Secondary;
+		}
+		// 两个武器都可用
+		if (typeData->SelectWeaponUseRange)
+		{
+			// 按距离筛选武器，PickWeaponIndex里对NavalTargeting和LandTargeting进行了检查，所以这里只用检查护甲
+			bool primaryCanAttack = CanAttack(pPrimary->Warhead, pTargetTechno);
+			bool secondaryCanAttack = CanAttack(pSecondary->Warhead, pTargetTechno);
+			if (pTarget->IsInAir())
+			{
+				// 能不能对空
+				primaryCanAttack = primaryCanAttack && pPrimary->Projectile->AA;
+				secondaryCanAttack = secondaryCanAttack && pSecondary->Projectile->AA;
+			}
+			// 两个武器都可以打，按距离选择
+			if (primaryCanAttack && secondaryCanAttack)
+			{
+				// 检查是否足够近
+				if (pTechno->IsCloseEnough(pTarget, 1))
+				{
+					return Secondary; // 返回副武器
+				}
+				else if (pTechno->IsCloseEnough(pTarget, 0))
+				{
+					return Primary; // 返回主武器
+				}
+			}
+		}
 		return 0x6F36E3; // 继续检查护甲
 	}
 	else
@@ -830,10 +865,14 @@ DEFINE_HOOK(0x6F36DB, TechnoClass_SelectWeapon_AntiMissile, 0xA)
 			break;
 		case AbstractType::Terrain:
 		case AbstractType::Cell:
-			SelectWeaponData* data = INI::GetConfig<SelectWeaponData>(INI::Rules, pTechno->GetTechnoType()->ID)->Data;
-			if (pSecondary->Projectile->AG && data->UseSecondary(pTechno, pTarget, pPrimary, pSecondary))
+			if (pSecondary->Projectile->AG)
 			{
-				return Secondary; // 返回副武器
+				// 按射程强选武器
+				TechnoTypeExt::TypeData* typeData = GetTypeData<TechnoTypeExt, TechnoTypeExt::TypeData>(pTechno->GetTechnoType());
+				if (typeData->SelectWeaponUseRange && pTechno->IsCloseEnough(pTarget, 1))
+				{
+					return Secondary; // 返回副武器
+				}
 			}
 			break;
 		}
@@ -841,29 +880,30 @@ DEFINE_HOOK(0x6F36DB, TechnoClass_SelectWeapon_AntiMissile, 0xA)
 	return Primary; // 返回主武器
 }
 
+// Phobos在这里新增对AU的检查，按距离切换武器可以在上面进行检查并切换
 // change form Otamaa
-DEFINE_HOOK(0x6F37EB, TechnoClass_SelectWeapon_SecondaryCheckAA_SwitchByRange, 0x6)
-{
-	enum { Primary = 0x6F37AD, Secondary = 0x6F3807 };
-	GET(TechnoClass*, pTechno, ESI);
-	GET(AbstractClass*, pTarget, EBP);
-	GET_STACK(WeaponTypeClass*, pPrimary, 0x18 - 0x4);
-	GET(WeaponTypeClass*, pSecondary, EAX);
-	// 默认使用主武器
-	int select = Primary;
-	// 根据距离选择应该使用主武器或者副武器
-	SelectWeaponData* data = INI::GetConfig<SelectWeaponData>(INI::Rules, pTechno->GetTechnoType()->ID)->Data;
-	if (data->UseSecondary(pTechno, pTarget, pPrimary, pSecondary))
-	{
-		select = Secondary; // 返回副武器
-	}
-	// check AA
-	if (!pPrimary->Projectile->AA && pSecondary->Projectile->AA && pTarget && pTarget->IsInAir())
-	{
-		select = Secondary; // 返回副武器
-	}
-	return select;
-}
+// DEFINE_HOOK(0x6F37EB, TechnoClass_SelectWeapon_SecondaryCheckAA_SwitchByRange, 0x6)
+// {
+// 	enum { Primary = 0x6F37AD, Secondary = 0x6F3807 };
+// 	GET(TechnoClass*, pTechno, ESI);
+// 	GET(AbstractClass*, pTarget, EBP);
+// 	GET_STACK(WeaponTypeClass*, pPrimary, 0x18 - 0x4);
+// 	GET(WeaponTypeClass*, pSecondary, EAX);
+// 	// 默认使用主武器
+// 	int select = Primary;
+// 	// 根据距离选择应该使用主武器或者副武器
+// 	SelectWeaponData* data = INI::GetConfig<SelectWeaponData>(INI::Rules, pTechno->GetTechnoType()->ID)->Data;
+// 	if (data->UseSecondary(pTechno, pTarget, pPrimary, pSecondary))
+// 	{
+// 		select = Secondary; // 返回副武器
+// 	}
+// 	// check AA
+// 	if (!pPrimary->Projectile->AA && pSecondary->Projectile->AA && pTarget && pTarget->IsInAir())
+// 	{
+// 		select = Secondary; // 返回副武器
+// 	}
+// 	return select;
+// }
 
 DEFINE_HOOK(0x6FDD61, TechnoClass_Fire_OverrideWeapon, 0x5)
 {

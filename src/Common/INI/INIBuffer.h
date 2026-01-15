@@ -13,6 +13,7 @@
 
 #include <Ext/Helper/StringEx.h>
 #include <Utilities/Constructs.h>
+#include <Utilities/Enum.h>
 #include <Utilities/Parser.h>
 
 template <>
@@ -260,6 +261,117 @@ inline bool Parser<Sequence>::TryParse(const char* pValue, Sequence* outValue)
 		return true;
 	}
 	return false;
+}
+
+static std::map<std::string, AffectedTarget> AffectedTargetStrings
+{
+	{ "none", AffectedTarget::None },
+	{ "land", AffectedTarget::Land },
+	{ "water", AffectedTarget::Water },
+	{ "nocontent", AffectedTarget::NoContent },
+	{ "infantry", AffectedTarget::Infantry },
+	{ "unit", AffectedTarget::Unit },
+	{ "units", AffectedTarget::Unit }, // Phobos说明书用这个
+	{ "building", AffectedTarget::Building },
+	{ "buildings", AffectedTarget::Building }, // Phobos说明书用这个
+	{ "aircraft", AffectedTarget::Aircraft },
+
+	{ "all", AffectedTarget::All },
+	{ "allcells", AffectedTarget::AllCells },
+	{ "alltechnos", AffectedTarget::AllTechnos },
+	{ "allcontents", AffectedTarget::AllContents }
+};
+
+template <>
+inline bool Parser<AffectedTarget>::TryParse(const char* pValue, AffectedTarget* outValue)
+{
+	std::string strValue = pValue;
+	trim(strValue);
+	if (strValue == "All" || strValue == "all")
+	{
+		*outValue = AffectedTarget::All;
+		return true;
+	}
+	if (strValue == "None" || strValue == "none")
+	{
+		*outValue = AffectedTarget::None;
+		return true;
+	}
+
+	// 多枚举的列表
+	AffectedTarget result = AffectedTarget::None;
+	std::vector<std::string> parts;
+    split(strValue, ",", &parts);
+
+	for (auto& str : parts)
+	{
+		std::string key = lowercase(str);
+		auto it = AffectedTargetStrings.find(key);
+		if (it != AffectedTargetStrings.end())
+		{
+			result = static_cast<AffectedTarget>(static_cast<unsigned char>(result) | static_cast<unsigned char>(it->second));
+		}
+		else
+		{
+			return false;
+		}
+	}
+	*outValue = result;
+	return true;
+}
+
+static std::map<std::string, AffectedHouse> AffectedHouseStrings
+{
+	{ "none", AffectedHouse::None },
+	{ "owner", AffectedHouse::Owner },
+	{ "self", AffectedHouse::Owner }, // Phobos说明书用这个
+	{ "allies", AffectedHouse::Allies },
+	{ "ally", AffectedHouse::Allies }, // Phobos说明书用这个
+	{ "enemies", AffectedHouse::Enemies },
+	{ "enemy", AffectedHouse::Enemies }, // Phobos说明书用这个
+
+	{ "team", AffectedHouse::Team },
+	{ "notallies", AffectedHouse::NotAllies },
+	{ "notowner", AffectedHouse::NotOwner },
+	{ "all", AffectedHouse::All },
+};
+
+template <>
+inline bool Parser<AffectedHouse>::TryParse(const char* pValue, AffectedHouse* outValue)
+{
+	std::string strValue = pValue;
+	trim(strValue);
+	if (strValue == "All" || strValue == "all")
+	{
+		*outValue = AffectedHouse::All;
+		return true;
+	}
+	if (strValue == "None" || strValue == "none")
+	{
+		*outValue = AffectedHouse::None;
+		return true;
+	}
+
+	// 多枚举的列表
+	AffectedHouse result = AffectedHouse::None;
+	std::vector<std::string> parts;
+    split(strValue, ",", &parts);
+
+	for (auto& str : parts)
+	{
+		std::string key = lowercase(str);
+		auto it = AffectedHouseStrings.find(key);
+		if (it != AffectedHouseStrings.end())
+		{
+			result = static_cast<AffectedHouse>(static_cast<unsigned char>(result) | static_cast<unsigned char>(it->second));
+		}
+		else
+		{
+			return false;
+		}
+	}
+	*outValue = result;
+	return true;
 }
 
 /// <summary>

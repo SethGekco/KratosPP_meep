@@ -34,7 +34,7 @@ std::basic_string<T> uppercase(const std::basic_string<T>& s)
 
 std::string& trim(std::string& s);
 
-void split(std::string& s, std::string& delim, std::vector<std::string>* result);
+void split(std::string& s, const std::string& delim, std::vector<std::string>* result);
 
 std::string subreplace(std::string resource, std::string sub, std::string replace);
 

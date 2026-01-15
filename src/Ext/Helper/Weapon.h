@@ -105,3 +105,15 @@ void PlayReportSound(WeaponTypeClass* pWeapon, CoordStruct sourcePos);
 
 void DrawWeaponAnim(ObjectClass* pShooter, TechnoClass* pAttacker, HouseClass* pAttackingHouse, WeaponTypeClass* pWeapon, CoordStruct sourcePos, CoordStruct targetPos);
 #pragma endregion
+
+// ----------------
+// 武器选择
+// ----------------
+#pragma region Weapon Selection
+
+// Checks if the techno can fire a no-ammo weapon with the given index.
+bool CanFireNoAmmoWeapon(TechnoClass* pTechno, int weaponIndex);
+
+// Compares two weapons and returns index of which one is eligible to fire against current target (0 = first, 1 = second), or -1 if neither works.
+int PickWeaponIndex(TechnoClass* pTechno, TechnoClass* pTargetTechno, AbstractClass* pTarget, int weaponIndexOne, int weaponIndexTwo, bool allowFallback, bool allowAAFallback);
+#pragma endregion

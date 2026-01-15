@@ -320,6 +320,15 @@ bool IsOnMark(TechnoClass* pTechno, FilterData data)
 	return mark;
 }
 
+bool IsHealthInThreshold(TechnoClass* pObject, double min, double max)
+{
+	if (!pObject->Health && !pObject->GetType()->Strength)
+	return true;
+
+	double hp = pObject->GetHealthPercentage();
+	return (hp > 0 ? hp > min : hp >= min) && hp <= max;
+}
+
 bool CanAttack(BulletClass* pBullet, TechnoClass* pTarget, bool isPassiveAcquire)
 {
 	bool canAttack = false;
@@ -349,16 +358,33 @@ bool CanAttack(BulletClass* pBullet, TechnoClass* pTarget, bool isPassiveAcquire
 	return canAttack;
 }
 
-bool CanAttack(TechnoClass* pAttacker, AbstractClass* pTarget, bool inRange, int weaponIdx, bool isPassiveAcquire)
+bool CanAttack(WarheadTypeClass* pWH, TechnoClass* pTarget, bool isPassiveAcquire)
 {
 	bool canAttack = false;
-	if (weaponIdx < 0)
+	if (pWH)
 	{
-		weaponIdx = pAttacker->SelectWeapon(pTarget);
+		// 判断护甲
+		bool forceFire = true;
+		bool retaliate = true;
+		bool passiveAcquire = true;
+		double versus = GetTypeData<WarheadTypeExt, WarheadTypeExt::TypeData>(pWH)->GetVersus(pTarget->GetTechnoType()->Armor, forceFire, retaliate, passiveAcquire);
+		if (isPassiveAcquire)
+		{
+			// 是否可以主动攻击
+			canAttack = versus > 0.2 || passiveAcquire;
+		}
+		else
+		{
+			canAttack = versus != 0.0;
+		}
 	}
-	WeaponStruct* pWeaponStruct = pAttacker->GetWeapon(weaponIdx);
-	WeaponTypeClass* pWeapon = nullptr;
-	if (pWeaponStruct && (pWeapon = pWeaponStruct->WeaponType) != nullptr && (!inRange || pAttacker->IsCloseEnough(pTarget, weaponIdx)))
+	return canAttack;
+}
+
+bool CanAttack(TechnoClass* pAttacker, AbstractClass* pTarget, WeaponTypeClass* pWeapon, bool isPassiveAcquire)
+{
+	bool canAttack = false;
+	if (pWeapon)
 	{
 		double versus = 1;
 		bool forceFire = true;
@@ -380,6 +406,22 @@ bool CanAttack(TechnoClass* pAttacker, AbstractClass* pTarget, bool inRange, int
 		{
 			canAttack = versus != 0.0;
 		}
+	}
+	return canAttack;
+}
+
+bool CanAttack(TechnoClass* pAttacker, AbstractClass* pTarget, bool inRange, int weaponIdx, bool isPassiveAcquire)
+{
+	bool canAttack = false;
+	if (weaponIdx < 0)
+	{
+		weaponIdx = pAttacker->SelectWeapon(pTarget);
+	}
+	WeaponStruct* pWeaponStruct = pAttacker->GetWeapon(weaponIdx);
+	WeaponTypeClass* pWeapon = nullptr;
+	if (pWeaponStruct && (pWeapon = pWeaponStruct->WeaponType) != nullptr && (!inRange || pAttacker->IsCloseEnough(pTarget, weaponIdx)))
+	{
+		canAttack = CanAttack(pAttacker, pTarget, pWeapon, isPassiveAcquire);
 		// 检查是否可以攻击
 		if (canAttack)
 		{
@@ -392,11 +434,6 @@ bool CanAttack(TechnoClass* pAttacker, AbstractClass* pTarget, bool inRange, int
 				break;
 			}
 		}
-	}
-	else
-	{
-		// 没有可以用的武器
-		canAttack = false;
 	}
 	return canAttack;
 }

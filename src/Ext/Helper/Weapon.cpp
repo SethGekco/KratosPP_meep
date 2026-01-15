@@ -6,17 +6,22 @@
 #include "Scripts.h"
 #include "Status.h"
 
+#include <CellClass.h>
+#include <ObjectClass.h>
 #include <SpawnManagerClass.h>
 #include <VocClass.h>
 #include <WarheadTypeClass.h>
 
 #include <Extension/TechnoExt.h>
 #include <Extension/BulletExt.h>
+#include <Extension/TechnoTypeExt.h>
 #include <Extension/WeaponTypeExt.h>
 
 #include <Ext/ObjectType/AttachEffect.h>
 #include <Ext/TechnoType/TechnoStatus.h>
 #include <Ext/WeaponType/TargetLaserData.h>
+
+#include <Utilities/EnumFunctions.h>
 
 // ----------------
 // 高级弹道学
@@ -483,5 +488,135 @@ void DrawWeaponAnim(ObjectClass* pShooter, TechnoClass* pAttacker, HouseClass* p
 			}
 		}
 	}
+}
+#pragma endregion
+
+// ----------------
+// 武器选择
+// ----------------
+#pragma region Weapon Selection
+
+// Checks if the techno can fire a no-ammo weapon with the given index.
+bool CanFireNoAmmoWeapon(TechnoClass* pTechno, int weaponIndex)
+{
+	TechnoTypeClass* pType = pTechno->GetTechnoType();
+
+	if (pType->Ammo > 0)
+	{
+		TechnoTypeExt::TypeData* typeData = GetTypeData<TechnoTypeExt, TechnoTypeExt::TypeData>(pType);
+
+		return pTechno->Ammo <= typeData->NoAmmoAmount && (typeData->NoAmmoWeapon == weaponIndex || typeData->NoAmmoWeapon == -1);
+	}
+
+	return false;
+}
+
+// Compares two weapons and returns index of which one is eligible to fire against current target (0 = first, 1 = second), or -1 if neither works.
+int PickWeaponIndex(TechnoClass* pTechno, TechnoClass* pTargetTechno, AbstractClass* pTarget, int weaponIndexOne, int weaponIndexTwo, bool allowFallback, bool allowAAFallback)
+{
+	WeaponStruct* pWeaponOne = pTechno->GetWeapon(weaponIndexOne);
+	WeaponStruct* pWeaponTwo = pTechno->GetWeapon(weaponIndexTwo);
+	if  (!pWeaponOne && !pWeaponTwo)
+	{
+		// 两个武器都没有
+		return -1;
+	}
+	else if (!pWeaponTwo)
+	{
+		// 只有第一个武器
+		return weaponIndexOne;
+	}
+	else if (!pWeaponOne)
+	{
+		// 只有第二个武器
+		return weaponIndexTwo;
+	}
+
+	CellClass* pTargetCell = nullptr;
+
+	// Ignore target cell for airborne target technos.
+	if (pTarget && (!pTargetTechno || !pTargetTechno->IsInAir()))
+	{
+		if (ObjectClass* pObject = abstract_cast<ObjectClass*, true>(pTarget))
+			pTargetCell = pObject->GetCell();
+		else if (CellClass* pCell = abstract_cast<CellClass*, true>(pTarget))
+			pTargetCell = pCell;
+	}
+
+	// 检查第二个武器能不能射
+	WeaponTypeClass* pWeaponTypeTwo = pWeaponTwo->WeaponType;
+	WeaponTypeExt::TypeData* dataTwo = GetTypeData<WeaponTypeExt, WeaponTypeExt::TypeData>(pWeaponTypeTwo);
+	if (!dataTwo->SkipWeaponPicking)
+	{
+		// 第二武器不能攻击格子
+		if (pTargetCell && !EnumFunctions::IsCellEligible(pTargetCell, dataTwo->CanTarget, true, true))
+		{
+			return weaponIndexOne;
+		}
+		// 第二武器不能攻击目标
+		if (pTargetTechno)
+		{
+			if (!EnumFunctions::IsTechnoEligible(pTargetTechno, dataTwo->CanTarget)
+				|| !EnumFunctions::CanTargetHouse(dataTwo->CanTargetHouses, pTechno->Owner, pTargetTechno->Owner)
+				// Phobos对低血量目标和PhobosAE的筛选
+				|| !IsHealthInThreshold(pTargetTechno, dataTwo->CanTargetMinHealth, dataTwo->CanTargetMaxHealth)
+				)
+			{
+				return weaponIndexOne;
+			}
+		}
+	}
+
+	// 第二武器对空检查
+	bool toAA = pTargetTechno && pTargetTechno->IsInAir() && pWeaponTypeTwo->Projectile->AA;
+	if (!allowFallback
+		&& (!allowAAFallback || !toAA)
+		&& !CanFireNoAmmoWeapon(pTechno, 1))
+	{
+		return weaponIndexOne;
+	}
+
+	// 检查第一个武器能不能射
+	WeaponTypeClass* pWeaponTypeOne = pWeaponOne->WeaponType;
+	WeaponTypeExt::TypeData* dataOne = GetTypeData<WeaponTypeExt, WeaponTypeExt::TypeData>(pWeaponTypeOne);
+	if (!dataOne->SkipWeaponPicking)
+	{
+		// 第一个武器不能攻击格子
+		if (pTargetCell && !EnumFunctions::IsCellEligible(pTargetCell, dataOne->CanTarget, true, true))
+		{
+			return weaponIndexTwo;
+		}
+		// 第一个武器不能攻击目标
+		if (pTargetTechno)
+		{
+			if (!EnumFunctions::IsTechnoEligible(pTargetTechno, dataOne->CanTarget)
+				|| !EnumFunctions::CanTargetHouse(dataOne->CanTargetHouses, pTechno->Owner, pTargetTechno->Owner)
+				// Phobos对低血量目标和PhobosAE的筛选
+				|| !IsHealthInThreshold(pTargetTechno, dataOne->CanTargetMinHealth, dataOne->CanTargetMaxHealth)
+				)
+			{
+				return weaponIndexTwo;
+			}
+		}
+	}
+
+	// Handle special case with NavalTargeting / LandTargeting.
+	if (!pTargetTechno && pTargetCell)
+	{
+		TechnoTypeClass* pType = pTechno->GetTechnoType();
+
+		if (pType->NavalTargeting == NavalTargetingType::Naval_Primary
+			|| pType->LandTargeting == LandTargetingType::Land_Secondary)
+		{
+			LandType landType = pTargetCell->LandType;
+
+			if (landType != LandType::Water && landType != LandType::Beach)
+			{
+				return weaponIndexTwo;
+			}
+		}
+	}
+
+	return -1;
 }
 #pragma endregion

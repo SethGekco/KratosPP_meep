@@ -88,37 +88,6 @@ static std::map<std::string, Armor> ArmorTypeStrings
 	{ "special_2", Armor::Special_2 }
 };
 
-static std::map<std::string, AffectedTarget> AffectedTargetStrings
-{
-	{ "None", AffectedTarget::None },
-	{ "Land", AffectedTarget::Land },
-	{ "Water", AffectedTarget::Water },
-	{ "NoContent", AffectedTarget::NoContent },
-	{ "Infantry", AffectedTarget::Infantry },
-	{ "Unit", AffectedTarget::Unit },
-	{ "Building", AffectedTarget::Building },
-	{ "Aircraft", AffectedTarget::Aircraft },
-
-	{ "All", AffectedTarget::All },
-	{ "AllCells", AffectedTarget::AllCells },
-	{ "AllTechnos", AffectedTarget::AllTechnos },
-	{ "AllContents", AffectedTarget::AllContents }
-};
-
-template <>
-inline bool Parser<AffectedTarget>::TryParse(const char* pValue, AffectedTarget* outValue)
-{
-	std::string key = lowercase(std::string(pValue));
-	auto it = AffectedTargetStrings.find(key);
-	if (it != AffectedTargetStrings.end())
-	{
-		*outValue = it->second;
-		return true;
-	}
-	return false;
-}
-
-
 struct AresVersus : public WarheadFlags
 {
 public:
