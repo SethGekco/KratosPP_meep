@@ -21,7 +21,7 @@ void StandEffect::CreateAndPutStand()
 	TechnoTypeClass* pType = TechnoTypeClass::Find(Data->Type.c_str());
 	if (pType)
 	{
-		pStand = dynamic_cast<TechnoClass*>(pType->CreateObject(AE->pSourceHouse));
+		pStand = abstract_cast<TechnoClass*, true>(pType->CreateObject(AE->pSourceHouse));
 	}
 	if (pStand)
 	{
@@ -36,7 +36,7 @@ void StandEffect::CreateAndPutStand()
 		}
 		else
 		{
-			dynamic_cast<FootClass*>(pStand)->Locomotor->Lock();
+			abstract_cast<FootClass*, true>(pStand)->Locomotor->Lock();
 		}
 		// only computer units can hunt
 		Mission mission = canGuard ? Mission::Guard : Mission::Hunt;
@@ -288,7 +288,7 @@ void StandEffect::UpdateStateTechno(bool masterIsDead)
 	}
 	else if (!masterIsMoving)
 	{
-		FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+		FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 		masterIsMoving = pFoot->Locomotor->Is_Moving() && pFoot->GetCurrentSpeed() > 0;
 	}
 
@@ -401,7 +401,7 @@ void StandEffect::UpdateStateTechno(bool masterIsDead)
 	// synch Moving anim
 	if (Data->IsTrain || Data->SameMoving)
 	{
-		FootClass* pFoot = dynamic_cast<FootClass*>(pStand);
+		FootClass* pFoot = abstract_cast<FootClass*, true>(pStand);
 		ILocomotion* loco = pFoot->Locomotor.get();
 		GUID locoId = pStand->GetTechnoType()->Locomotor;
 		if (locoId == LocomotionClass::CLSIDs::Drive
@@ -671,8 +671,8 @@ void StandEffect::OnGScreenRender(CoordStruct location)
 					pStand->RockingSidewaysPerFrame = sideways;
 
 					// 同步 替身 与 JOJO 的地形角度
-					ILocomotion* masterLoco = dynamic_cast<FootClass*>(pTechno)->Locomotor.get();
-					ILocomotion* standLoco = dynamic_cast<FootClass*>(pStand)->Locomotor.get();
+					ILocomotion* masterLoco = abstract_cast<FootClass*, true>(pTechno)->Locomotor.get();
+					ILocomotion* standLoco = abstract_cast<FootClass*, true>(pStand)->Locomotor.get();
 
 					DWORD previousRamp = 0;
 					DWORD currentRamp = 0;

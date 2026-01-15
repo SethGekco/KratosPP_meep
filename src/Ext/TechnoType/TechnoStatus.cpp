@@ -189,7 +189,7 @@ void TechnoStatus::OnUpdate()
 		}
 		if (!IsBuilding())
 		{
-			FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+			FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 			_isMoving = pFoot->GetCurrentSpeed() > 0 && pFoot->Locomotor.get()->Is_Moving();
 			OnUpdate_DeployTo();
 			OnUpdate_Transform();
@@ -304,7 +304,7 @@ void TechnoStatus::OnReceiveDamageEnd(int* pRealDamage, WarheadTypeClass* pWH, D
 			pTechno->IsFallingDown = true;
 			if (IsInfantry())
 			{
-				dynamic_cast<InfantryClass*>(pTechno)->PlayAnim(Sequence::Paradrop);
+				abstract_cast<InfantryClass*, true>(pTechno)->PlayAnim(Sequence::Paradrop);
 			}
 		}
 		// 被打死时读取弹头设置

@@ -25,7 +25,7 @@ void TechnoStatus::OnUpdate_GiftBox()
 		// JJ有单独的Facing
 		if (IsJumpjet())
 		{
-			FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+			FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 			GiftBox->BodyDir = dynamic_cast<JumpjetLocomotionClass*>(pFoot->Locomotor.get())->LocomotionFacing.Current();
 			GiftBox->TurretDir = GiftBox->BodyDir;
 		}
@@ -156,7 +156,7 @@ void TechnoStatus::ReleaseGift(std::vector<std::string> gifts, GiftBoxData data)
 	// 获取目的地
 	if (!IsBuilding())
 	{
-		pDest = dynamic_cast<FootClass*>(pTechno)->Destination;
+		pDest = abstract_cast<FootClass*, true>(pTechno)->Destination;
 		pFocus = pTechno->Focus;
 	}
 	// 读取盒子的状态

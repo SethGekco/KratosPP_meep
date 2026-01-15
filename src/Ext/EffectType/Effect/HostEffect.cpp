@@ -83,7 +83,7 @@ void HostEffect::OnUpdate()
 				pTarget = pTechno->Target;
 				if (!IsBuilding())
 				{
-					pDest = dynamic_cast<FootClass*>(pTechno)->Destination;
+					pDest = abstract_cast<FootClass*, true>(pTechno)->Destination;
 					pFocus = pTechno->Focus;
 				}
 				// 继承血量

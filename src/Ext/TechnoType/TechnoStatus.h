@@ -73,7 +73,7 @@ public:
 	{
 		auto const& argsArray = reinterpret_cast<void**>(args);
 		AbstractClass* pInvalid = (AbstractClass*)argsArray[0];
-		if (AirstrikeClass* pAirstrike = dynamic_cast<AirstrikeClass*>(pInvalid))
+		if (AirstrikeClass* pAirstrike = abstract_cast<AirstrikeClass*>(pInvalid))
 		{
 			CancelAirstrike(pAirstrike);
 		}

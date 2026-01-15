@@ -106,7 +106,7 @@ DEFINE_HOOK(0x414876, TechnoClass_DrawShadow, 0x7) // Aircraft
 		if (pType->MissileSpawn || pTechno->IsInAir())
 		{
 			// 调整倾斜时影子的纵向比例
-			FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+			FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 			// 从Matrix中读取的角度不可用
 			float x = 0; // 倾转轴
 			float y = 0; // 俯仰轴
@@ -488,7 +488,7 @@ DEFINE_HOOK(0x4184FC, AircraftClass_Mission_Attack_Fire_Zero, 0x6)
 DEFINE_HOOK(0x4CDCFD, FlyLocomotionClass_MovingUpdate_HoverAttack, 0x7)
 {
 	GET(FlyLocomotionClass*, pFly, ESI);
-	AircraftClass* pAir = dynamic_cast<AircraftClass*>(pFly->LinkedTo);
+	AircraftClass* pAir = abstract_cast<AircraftClass*>(pFly->LinkedTo);
 	if (pAir && !pAir->Type->MissileSpawn && !pAir->Type->Fighter && !pAir->Is_Strafe() && pAir->CurrentMission == Mission::Attack)
 	{
 		if (AbstractClass* pDest = pAir->Destination)

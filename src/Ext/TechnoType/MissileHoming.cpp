@@ -76,7 +76,7 @@ void MissileHoming::OnUpdate()
 		{
 			CoordStruct sourcePos = pTechno->GetCoords();
 			CoordStruct targetPos;
-			dynamic_cast<FootClass*>(pTechno)->Locomotor->Destination(&targetPos);
+			abstract_cast<FootClass*, true>(pTechno)->Locomotor->Destination(&targetPos);
 			DirStruct dir = Point2Dir(sourcePos, targetPos);
 			pTechno->PrimaryFacing.SetCurrent(dir);
 			pTechno->SecondaryFacing.SetCurrent(dir);
@@ -86,7 +86,7 @@ void MissileHoming::OnUpdate()
 	if (IsHoming && !IsDeadOrInvisible(pTechno))
 	{
 		// 导弹开始飞行后，修改目的地为追踪的目标位置
-		RocketLocomotionClass* pLoco = dynamic_cast<RocketLocomotionClass*>(dynamic_cast<FootClass*>(pTechno)->Locomotor.get());
+		RocketLocomotionClass* pLoco = dynamic_cast<RocketLocomotionClass*>(abstract_cast<FootClass*, true>(pTechno)->Locomotor.get());
 		if (pLoco)
 		{
 			// 目标可能在准备阶段就死了，不论如何首先记录下最后的位置

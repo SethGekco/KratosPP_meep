@@ -15,7 +15,7 @@
 
 void AutoWeaponEffect::SetupFakeTargetToBullet(int index, int burst, BulletClass*& pBullet, AbstractClass*& pTarget)
 {
-	if (ObjectClass* pObj = dynamic_cast<ObjectClass*>(pTarget))
+	if (ObjectClass* pObj = abstract_cast<ObjectClass*>(pTarget))
 	{
 		if (BulletStatus* status = GetStatus<BulletExt, BulletStatus>(pBullet))
 		{

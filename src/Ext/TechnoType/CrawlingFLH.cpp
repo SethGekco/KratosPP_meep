@@ -17,7 +17,7 @@ CrawlingFLHData* CrawlingFLH::GetCrawlingFLHData()
 void CrawlingFLH::Setup()
 {
 	_crawlingFLHData = nullptr;
-	if (!IsInfantry() || dynamic_cast<InfantryClass*>(pTechno)->Type->Fearless)
+	if (!IsInfantry() || abstract_cast<InfantryClass*, true>(pTechno)->Type->Fearless)
 	{
 		Disable();
 	}
@@ -39,7 +39,7 @@ void CrawlingFLH::OnUpdate()
 	WeaponStruct* secondary = pTechno->GetWeapon(1);
 
 	bool isElite = pTechno->Veterancy.IsElite();
-	if (dynamic_cast<InfantryClass*>(pTechno)->Crawling)
+	if (abstract_cast<InfantryClass*, true>(pTechno)->Crawling)
 	{
 		if (isElite)
 		{

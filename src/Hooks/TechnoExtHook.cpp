@@ -989,7 +989,7 @@ DEFINE_HOOK(0x69FC31, LocomotionClass_Update_Ramp, 0x5) // ShipLoco
 {
 	LocomotionClass* pLoco = (LocomotionClass*)(R->ESI() - 4);
 	TechnoClass* pTechno = pLoco->LinkedTo;
-	UnitClass* pUnit = dynamic_cast<UnitClass*>(pTechno);
+	UnitClass* pUnit = abstract_cast<UnitClass*, true>(pTechno);
 	if (pTechno->IsInAir() || (pUnit && !pUnit->Type->IsTilter))
 	{
 		R->ECX(0); // set Ramp1 = 0

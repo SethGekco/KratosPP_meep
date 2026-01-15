@@ -26,7 +26,7 @@ void AnimStand::CreateAndPutStand()
 			pHouse = HouseClass::FindCivilianSide();
 		}
 		// Make Stand
-		pStand = dynamic_cast<TechnoClass*>(pType->CreateObject(pHouse));
+		pStand = abstract_cast<TechnoClass*, true>(pType->CreateObject(pHouse));
 		if (pStand)
 		{
 			// 初始化设置
@@ -44,7 +44,7 @@ void AnimStand::CreateAndPutStand()
 			}
 			else
 			{
-				dynamic_cast<FootClass*>(pStand)->Locomotor->Lock();
+				abstract_cast<FootClass*, true>(pStand)->Locomotor->Lock();
 			}
 			// only computer units can hunt
 			Mission mission = canGuard ? Mission::Guard : Mission::Hunt;

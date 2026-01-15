@@ -56,7 +56,7 @@ bool TryPutTechno(TechnoClass* pTechno, CoordStruct location, CellClass* pCell, 
 			pCell->OccupationFlags = occFlags;
 		}
 		bool dontMove = false;
-		if (BuildingClass* pBuilding = dynamic_cast<BuildingClass*>(pTechno))
+		if (BuildingClass* pBuilding = abstract_cast<BuildingClass*, true>(pTechno))
 		{
 			if (!virtualUnit && pBuilding->Type->Foundation != Foundation::_0x0)
 			{
@@ -85,7 +85,7 @@ bool TryPutTechno(TechnoClass* pTechno, CoordStruct location, CellClass* pCell, 
 
 TechnoClass* CreateAndPutTechno(TechnoTypeClass* pType, HouseClass* pHouse, CoordStruct location, CellClass* pCell)
 {
-	TechnoClass* pTechno = dynamic_cast<TechnoClass*>(pType->CreateObject(pHouse));
+	TechnoClass* pTechno = abstract_cast<TechnoClass*, true>(pType->CreateObject(pHouse));
 	if (TryPutTechno(pTechno, location, pCell))
 	{
 		return pTechno;
@@ -232,7 +232,7 @@ void ReleaseGifts(std::vector<std::string> gifts, GiftBoxEntity data, BoxStateCa
 					// JJ有单独的Facing
 					if (pGiftStatus->IsJumpjet())
 					{
-						FootClass* pGiftFoot = dynamic_cast<FootClass*>(pGift);
+						FootClass* pGiftFoot = abstract_cast<FootClass*, true>(pGift);
 						JumpjetLocomotionClass* pLoco = dynamic_cast<JumpjetLocomotionClass*>(pGiftFoot->Locomotor.get());
 						pLoco->LocomotionFacing.SetCurrent(boxState.BodyDir);
 					}

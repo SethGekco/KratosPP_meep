@@ -195,7 +195,7 @@ bool InRange(ObjectClass* pObject, AbstractClass* pTarget, WeaponTypeClass* pWea
 	case AbstractType::Infantry:
 	case AbstractType::Unit:
 	case AbstractType::Aircraft:
-		return dynamic_cast<TechnoClass*>(pObject)->InRange(&location, pTarget, pWeapon);
+		return abstract_cast<TechnoClass*, true>(pObject)->InRange(&location, pTarget, pWeapon);
 	default:
 		CoordStruct targetPos = pTarget->GetCoords();
 		double distance = targetPos.DistanceFrom(location);

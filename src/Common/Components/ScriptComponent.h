@@ -148,7 +148,7 @@ public:
 	{
 		if (IsBuilding())
 		{
-			BuildingClass* pBuilding = dynamic_cast<BuildingClass*>(pTechno);
+			BuildingClass* pBuilding = abstract_cast<BuildingClass*, true>(pTechno);
 			return pBuilding->BState == BStateType::Construction && pBuilding->CurrentMission != Mission::Selling;
 		}
 		return false;
@@ -158,7 +158,7 @@ public:
 	{
 		if (IsBuilding())
 		{
-			BuildingClass* pBuilding = dynamic_cast<BuildingClass*>(pTechno);
+			BuildingClass* pBuilding = abstract_cast<BuildingClass*, true>(pTechno);
 			return pBuilding->BState == BStateType::Construction && pBuilding->CurrentMission == Mission::Selling && pBuilding->MissionStatus > 0;
 		}
 		return false;

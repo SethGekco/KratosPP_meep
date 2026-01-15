@@ -21,12 +21,12 @@ AircraftAttitudeData* AircraftAttitude::GetAircraftAttitudeData()
 bool AircraftAttitude::TryGetAirportDir(int& poseDir)
 {
 	poseDir = RulesClass::Instance->PoseDir;
-	AircraftClass* pAir = dynamic_cast<AircraftClass*>(pTechno);
+	AircraftClass* pAir = abstract_cast<AircraftClass*, true>(pTechno);
 	if (pAir->HasAnyLink()) // InRadioContact
 	{
 		TechnoClass* pAirport = pAir->GetNthLink();
 		// 傻逼飞机是几号停机位
-		int index = dynamic_cast<RadioClass*>(pAirport)->FindLinkIndex(pAir);
+		int index = abstract_cast<RadioClass*, true>(pAirport)->FindLinkIndex(pAir);
 		if (index < 128)
 		{
 			const char* section = pAirport->GetTechnoType()->ID;
@@ -66,7 +66,7 @@ void AircraftAttitude::UpdateHeadToCoord(CoordStruct headTo, bool lockAngle)
 	}
 	if (!headTo.IsEmpty())
 	{
-		FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+		FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 		FlyLocomotionClass* pFly = dynamic_cast<FlyLocomotionClass*>(pFoot->Locomotor.get());
 
 		if (pFly->IsTakingOff || pFly->IsLanding || !pFly->HasMoveOrder)
@@ -188,7 +188,7 @@ void AircraftAttitude::OnUpdate()
 		}
 		// 正事
 		// 检查是否开启了吊运功能
-		if (dynamic_cast<AircraftClass*>(pTechno)->Type->Carryall)
+		if (abstract_cast<AircraftClass*, true>(pTechno)->Type->Carryall)
 		{
 			PitchAngle = 0;
 		}
@@ -218,7 +218,7 @@ void AircraftAttitude::OnUpdate()
 		if (!GetAircraftAttitudeData()->Disable && !_lockAngle)
 		{
 			// 根据速度计算出飞行的下一个位置
-			FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+			FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 			if (FlyLocomotionClass* pFly = dynamic_cast<FlyLocomotionClass*>(pFoot->Locomotor.get()))
 			{
 				CoordStruct destPos = CoordStruct::Empty;
@@ -283,7 +283,7 @@ void AircraftAttitude::OnUpdateEnd()
 	if (!IsDeadOrInvisible(pTechno) && !IsDeadOrInvisible(pTechno->SpawnOwner))
 	{
 		AircraftAttitudeData* data = GetAircraftAttitudeData();
-		FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+		FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 		FlyLocomotionClass* pFly = dynamic_cast<FlyLocomotionClass*>(pFoot->Locomotor.get());
 
 		TechnoClass* pSpawnOwner = pTechno->SpawnOwner;

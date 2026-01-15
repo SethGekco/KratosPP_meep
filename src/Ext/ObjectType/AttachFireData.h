@@ -158,7 +158,7 @@ public:
 					canFire = false;
 					break;
 				}
-				TechnoClass* pTargetTechno = dynamic_cast<TechnoClass*>(pTarget);
+				TechnoClass* pTargetTechno = abstract_cast<TechnoClass*, true>(pTarget);
 				// 检查目标血量
 				if (CheckTargetHP)
 				{

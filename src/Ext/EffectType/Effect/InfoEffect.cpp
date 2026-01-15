@@ -264,7 +264,7 @@ void InfoEffect::OnGScreenRenderEnd(CoordStruct location)
 			if (Data->Dest.Mode != InfoMode::NONE && (Data->Dest.ShowEnemy || isPlayerControl) && (!Data->Dest.OnlySelected || isSelected))
 			{
 				AbstractClass* pDest = nullptr;
-				if (IsFoot() && (pDest = dynamic_cast<FootClass*>(pTechno)->Destination) != nullptr)
+				if (IsFoot() && (pDest = abstract_cast<FootClass*, true>(pTechno)->Destination) != nullptr)
 				{
 					CoordStruct targetPos = pDest->GetCoords();
 					DrawDashedLine(DSurface::Temp, pos, ToClientPos(targetPos), Data->Dest.Color, bounds);
@@ -277,7 +277,7 @@ void InfoEffect::OnGScreenRenderEnd(CoordStruct location)
 				DirStruct toDir = pTechno->PrimaryFacing.Desired();
 				if (pTechno->GetTechnoType()->Locomotor == LocomotionClass::CLSIDs::Jumpjet)
 				{
-					FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+					FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 					if (JumpjetLocomotionClass* jjLoco = dynamic_cast<JumpjetLocomotionClass*>(pFoot->Locomotor.get()))
 					{
 						dir = jjLoco->LocomotionFacing.Current();
@@ -343,7 +343,7 @@ void InfoEffect::OnGScreenRenderEnd(CoordStruct location)
 				if (Data->Target.Mode == InfoMode::TEXT && pTarget->AbstractFlags & AbstractFlags::Object)
 				{
 					Point2D targetPos = ToClientPos(targetLocation);
-					std::string id = dynamic_cast<ObjectClass*>(pTarget)->GetType()->ID;
+					std::string id = abstract_cast<ObjectClass*, true>(pTarget)->GetType()->ID;
 					PrintInfoText(id, Data->Target.Color, targetPos, Data->Target);
 				}
 			}

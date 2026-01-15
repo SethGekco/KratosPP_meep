@@ -46,7 +46,7 @@ static Point2D CoordsToScreen(CoordStruct coords)
 
 static bool CastToBullet(AbstractClass* pTarget, BulletClass*& pBullet)
 {
-	pBullet = dynamic_cast<BulletClass*>(pTarget);
+	pBullet = abstract_cast<BulletClass*>(pTarget);
 	return pBullet != nullptr;
 	/*
 	if (pTarget)
@@ -54,7 +54,7 @@ static bool CastToBullet(AbstractClass* pTarget, BulletClass*& pBullet)
 		switch (pTarget->WhatAmI())
 		{
 		case AbstractType::Bullet:
-			pBullet = dynamic_cast<BulletClass*>(pTarget);
+			pBullet = abstract_cast<BulletClass*>(pTarget);
 			return pBullet != nullptr;
 		default:
 			return false;
@@ -66,12 +66,12 @@ static bool CastToBullet(AbstractClass* pTarget, BulletClass*& pBullet)
 
 static bool CastToBullet(ObjectClass* pObject, BulletClass*& pBullet)
 {
-	return CastToBullet(dynamic_cast<AbstractClass*>(pObject), pBullet);
+	return CastToBullet(abstract_cast<AbstractClass*>(pObject), pBullet);
 }
 
 static bool CastToTechno(AbstractClass* pTarget, TechnoClass*& pTechno)
 {
-	pTechno = dynamic_cast<TechnoClass*>(pTarget);
+	pTechno = abstract_cast<TechnoClass*>(pTarget);
 	return pTechno != nullptr;
 	/*
 	if (pTarget)
@@ -82,7 +82,7 @@ static bool CastToTechno(AbstractClass* pTarget, TechnoClass*& pTechno)
 		case AbstractType::Unit:
 		case AbstractType::Infantry:
 		case AbstractType::Aircraft:
-			pTechno = dynamic_cast<TechnoClass*>(pTarget);
+			pTechno = abstract_cast<TechnoClass*>(pTarget);
 			return pTechno != nullptr;
 		default:
 			return false;
@@ -93,14 +93,14 @@ static bool CastToTechno(AbstractClass* pTarget, TechnoClass*& pTechno)
 }
 static bool CastToTechno(ObjectClass* pObject, TechnoClass*& pTechno)
 {
-	return CastToTechno(dynamic_cast<AbstractClass*>(pObject), pTechno);
+	return CastToTechno(abstract_cast<AbstractClass*>(pObject), pTechno);
 }
 
 static bool CastToFoot(TechnoClass* pTechno, FootClass*& pFoot)
 {
 	if (pTechno->AbstractFlags & AbstractFlags::Foot)
 	{
-		pFoot = dynamic_cast<FootClass*>(pTechno);
+		pFoot = abstract_cast<FootClass*>(pTechno);
 		return pFoot != nullptr;
 	}
 	return false;

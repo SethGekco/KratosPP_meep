@@ -21,7 +21,7 @@ void TechnoStatus::OnUpdate_Freeze()
 			// 清除所有目标
 			ClearAllTarget(pTechno);
 			// 马上停止活动
-			if (FootClass* pFoot = dynamic_cast<FootClass*>(pTechno))
+			if (FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno))
 			{
 				ForceStopMoving(pFoot);
 			}

@@ -169,7 +169,7 @@ void ExtraFireEffect::OnFire(AbstractClass* pTarget, int weaponIdx)
 							if (weaponData->UseAlternateFLH && pTechno->Transporter)
 							{
 								// 获取开或者位于载具的序号，再获取载具的开火坐标，先进后出，序号随着乘客数量增长
-								int index = pTechno->Transporter->Passengers.IndexOf(dynamic_cast<FootClass*>(pTechno));
+								int index = pTechno->Transporter->Passengers.IndexOf(abstract_cast<FootClass*, true>(pTechno));
 								// 有效序号1 - 5, 对应FLH 0-4
 								if (index > 0 && index < 6)
 								{

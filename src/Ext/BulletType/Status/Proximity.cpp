@@ -106,7 +106,7 @@ void BulletStatus::OnUpdateEnd_Proximity(CoordStruct& sourcePos)
 						// 无视高度和距离，格子内的对象都算碰撞目标
 						if (pTarget->WhatAmI() == AbstractType::Building)
 						{
-							if (BuildingClass* pBuilding = dynamic_cast<BuildingClass*>(pTarget))
+							if (BuildingClass* pBuilding = abstract_cast<BuildingClass*, true>(pTarget))
 							{
 								// 检查建筑在范围内
 								hit = CanHit(pBuilding, checkPos.Z, data->Blade, data->ZOffset);

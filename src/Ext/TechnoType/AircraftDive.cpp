@@ -35,10 +35,10 @@ void AircraftDive::ExtChanged()
 
 void AircraftDive::OnUpdate()
 {
-	if (!IsDeadOrInvisible(pTechno) && !dynamic_cast<AircraftClass*>(pTechno)->Type->Carryall)
+	if (!IsDeadOrInvisible(pTechno) && !abstract_cast<AircraftClass*, true>(pTechno)->Type->Carryall)
 	{
 		AircraftDiveData* data = GetAircraftDiveData();
-		FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+		FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 		FlyLocomotionClass* pFly = dynamic_cast<FlyLocomotionClass*>(pFoot->Locomotor.get());
 		if (!pTechno->IsInAir() || pFly->IsTakingOff || pFly->IsLanding)
 		{

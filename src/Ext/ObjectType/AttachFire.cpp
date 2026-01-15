@@ -17,7 +17,7 @@ bool AttachFire::FireCustomWeapon(TechnoClass* pAttacker, AbstractClass* pTarget
 	CoordStruct flh, bool isOnBody, bool isOnTarget, FireBulletToTarget callback)
 {
 	// 不允许朝这个目标发射
-	if (!weaponTypeData.CanFireToTarget(pTarget, dynamic_cast<ObjectClass*>(pObject), pAttacker, pAttackingHouse, pWeapon))
+	if (!weaponTypeData.CanFireToTarget(pTarget, abstract_cast<ObjectClass*>(pObject), pAttacker, pAttackingHouse, pWeapon))
 	{
 		return false;
 	}
@@ -99,7 +99,7 @@ bool AttachFire::FireCustomWeapon(TechnoClass* pAttacker, AbstractClass* pTarget
 					bulletVelocity = radialFire.GetBulletVelocity(i, weaponTypeData.RadialZ);
 				}
 				// 发射武器，全射出去
-				BulletClass* pBullet = FireBulletTo(dynamic_cast<ObjectClass*>(pObject), pAttacker, pTarget, pAttackingHouse, pWeapon, sourcePos, targetPos, bulletVelocity, flh, !isOnBody);
+				BulletClass* pBullet = FireBulletTo(abstract_cast<ObjectClass*>(pObject), pAttacker, pTarget, pAttackingHouse, pWeapon, sourcePos, targetPos, bulletVelocity, flh, !isOnBody);
 				// 记录下子机发射器的开火坐标
 				if (pWeapon->Spawner)
 				{
@@ -204,7 +204,7 @@ void AttachFire::SimulateBurstFireOnce(SimulateBurst& burst)
 	WeaponTypeClass* pWeapon = burst.pWeapon;
 	CoordStruct tempFLH = burst.FLH;
 	tempFLH.Y *= burst.FlipY;
-	BulletClass* pBullet = FireBulletTo(dynamic_cast<ObjectClass*>(pObject), burst.pAttacker, burst.pTarget, burst.pAttackingHouse, pWeapon, sourcePos, targetPos, bulletVelocity, tempFLH, !burst.IsOnBody);
+	BulletClass* pBullet = FireBulletTo(abstract_cast<ObjectClass*>(pObject), burst.pAttacker, burst.pTarget, burst.pAttackingHouse, pWeapon, sourcePos, targetPos, bulletVelocity, tempFLH, !burst.IsOnBody);
 	// 记录下子机发射器的开火坐标
 	if (pWeapon->Spawner)
 	{

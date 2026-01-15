@@ -288,7 +288,7 @@ void TurretAngle::OnUpdate()
 				return;
 			}
 		}
-		FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+		FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 		_isMoving = pFoot->Locomotor->Is_Moving() && pFoot->GetCurrentSpeed() > 0;
 		CoordStruct sourcePos = pTechno->GetCoords();
 		// 车体朝向方向
@@ -309,7 +309,7 @@ void TurretAngle::OnUpdate()
 		bool hasTarget = pTarget != nullptr;
 		if (!hasTarget)
 		{
-			pTarget = dynamic_cast<FootClass*>(pTechno)->Destination;
+			pTarget = abstract_cast<FootClass*, true>(pTechno)->Destination;
 		}
 		if (pTarget)
 		{

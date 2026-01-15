@@ -22,12 +22,12 @@ bool TryGetBlackHoleState(ObjectClass* pObject, BlackHoleState*& state)
 	case AbstractType::Unit:
 	case AbstractType::Aircraft:
 	{
-		state = GetScript<TechnoExt, BlackHoleState>(dynamic_cast<TechnoClass*>(pObject));
+		state = GetScript<TechnoExt, BlackHoleState>(abstract_cast<TechnoClass*, true>(pObject));
 		break;
 	}
 	case AbstractType::Bullet:
 	{
-		state = GetScript<BulletExt, BlackHoleState>(dynamic_cast<BulletClass*>(pObject));
+		state = GetScript<BulletExt, BlackHoleState>(abstract_cast<BulletClass*, true>(pObject));
 		break;
 	}
 	default:

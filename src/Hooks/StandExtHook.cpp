@@ -269,7 +269,7 @@ DEFINE_HOOK(0x4DB091, FootClass_GetZAdjustment, 0x6)
 			// 从JOJO身上获取ZAdjust
 			TechnoClass* pMaster = status->pMyMaster;
 			int z = pMaster->GetZAdjustment();
-			if (BuildingClass* pBuilding = dynamic_cast<BuildingClass*>(pMaster))
+			if (BuildingClass* pBuilding = abstract_cast<BuildingClass*, true>(pMaster))
 			{
 				if (status->MyStandData.ZOffset < 0)
 				{
@@ -340,7 +340,7 @@ DEFINE_HOOK(0x5F6BF7, ObjectClass_GetYSort, 0x5)
 	{
 		// 什么都不做
 	}
-	else if (TechnoClass* pTechno = dynamic_cast<TechnoClass*>(pObject))
+	else if (TechnoClass* pTechno = abstract_cast<TechnoClass*>(pObject))
 	{
 		TechnoStatus* status = nullptr;
 		if (TryGetStatus<TechnoExt, TechnoStatus>(pTechno, status) && status->AmIStand() && status->pMyMaster && !status->MyStandData.IsTrain)
@@ -350,7 +350,7 @@ DEFINE_HOOK(0x5F6BF7, ObjectClass_GetYSort, 0x5)
 			int offset = status->MyStandData.ZOffset;
 			if (offset >= 0)
 			{
-				if (BuildingClass* pBuilding = dynamic_cast<BuildingClass*>(status->pMyMaster))
+				if (BuildingClass* pBuilding = abstract_cast<BuildingClass*>(status->pMyMaster))
 				{
 					BuildingTypeClass* pType = pBuilding->Type;
 					int bY = 0;

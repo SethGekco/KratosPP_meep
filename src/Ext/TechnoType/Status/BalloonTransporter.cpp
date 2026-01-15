@@ -10,7 +10,7 @@ void TechnoStatus::OnUpdate_BalloonTransporter()
 		{
 			BalloonFall = false;
 			// 油满出发
-			FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+			FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 			if (pFoot && !pFoot->Locomotor->Is_Moving() && !pFoot->Locomotor->Is_Moving_Now())
 			{
 				if (CellClass* pCell = MapClass::Instance->TryGetCellAt(pTechno->GetCoords()))

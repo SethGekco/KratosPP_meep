@@ -53,7 +53,7 @@ void BulletStatus::OnUpdate_SelfLaunchOrPumpAction()
 			// 从占据的格子中移除自己
 			pSource->UnmarkAllOccupationBits(sourcePos);
 			// 强令停止移动
-			ForceStopMoving(dynamic_cast<FootClass*>(pSource));
+			ForceStopMoving(abstract_cast<FootClass*, true>(pSource));
 			// 清除移动目的地
 			pSource->SetDestination(nullptr, true);
 			// Limbo发射者
@@ -89,7 +89,7 @@ bool BulletStatus::OnDetonate_SelfLaunch(CoordStruct* pCoords)
 			// 从占据的格子中移除自己
 			pSource->UnmarkAllOccupationBits(sourcePos);
 			// 强令停止移动
-			ForceStopMoving(dynamic_cast<FootClass*>(pSource));
+			ForceStopMoving(abstract_cast<FootClass*, true>(pSource));
 			// 清除移动目的地
 			pSource->SetDestination(nullptr, true);
 			bool onBridge = false;

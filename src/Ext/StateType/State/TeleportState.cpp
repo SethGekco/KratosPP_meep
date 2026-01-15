@@ -96,7 +96,7 @@ CoordStruct TeleportState::GetAndMarkDestination(CoordStruct location)
 	pDest = nullptr;
 	pFocus = nullptr;
 
-	FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+	FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 	// 没有被磁电抬起
 	if (!pFoot->IsAttackedByLocomotor)
 	{
@@ -207,7 +207,7 @@ void TeleportState::OnUpdate()
 							}
 							else if (pTargetTechno->GetTechnoType()->Locomotor == LocomotionClass::CLSIDs::Jumpjet)
 							{
-								FootClass* pTargetFoot = dynamic_cast<FootClass*>(pTargetTechno);
+								FootClass* pTargetFoot = abstract_cast<FootClass*, true>(pTargetTechno);
 								if (JumpjetLocomotionClass* jjLoco = dynamic_cast<JumpjetLocomotionClass*>(pTargetFoot->Locomotor.get()))
 								{
 									facing = jjLoco->LocomotionFacing.Current();
@@ -270,7 +270,7 @@ void TeleportState::OnUpdate()
 					// 可以跳
 					if (pTargetCell)
 					{
-						FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+						FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 						targetPos = pTargetCell->GetCoordsWithBridge();
 						_teleportTimer.Stop();
 						if (Data.ClearTarget)
@@ -463,9 +463,9 @@ void TeleportState::OnUpdate()
 			_step = TeleportStep::READY;
 			CellClass* pCell = MapClass::Instance->TryGetCellAt(location);
 			// 空中单位需要更新在空中的追踪位置，关系到防空武器的命中判定
-			FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
 			if (pTechno->IsInAir() && pCell)
 			{
+				FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 				AircraftTrackerClass::Instance->Update_Entry(pTechno, pFoot->LastJumpjetMapCoords, pCell->MapCoords);
 			}
 			if (!pTechno->Target)

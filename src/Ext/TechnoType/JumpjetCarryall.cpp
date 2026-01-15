@@ -73,7 +73,7 @@ bool JumpjetCarryall::InMission()
 
 bool JumpjetCarryall::CanLift(TechnoClass* pTarget, bool& toPayload)
 {
-	FootClass* pTargetFoot = dynamic_cast<FootClass*>(pTarget);
+	FootClass* pTargetFoot = abstract_cast<FootClass*>(pTarget);
 	if (pTechno && pTargetFoot && pTechno != pTargetFoot
 		&& pTechno->Owner->IsControlledByCurrentPlayer() && pTechno->Owner->IsAlliedWith(pTargetFoot->GetOwningHouse())
 		&& !pTargetFoot->ParasiteEatingMe && !pTargetFoot->IsIronCurtained() && !pTargetFoot->WarpingOut && !pTargetFoot->IsImmobilized && !pTargetFoot->IsAttackedByLocomotor)
@@ -170,7 +170,7 @@ bool JumpjetCarryall::NotToTarget()
 {
 	if (!IsDeadOrInvisible(_pTarget) && _pTargetCell)
 	{
-		if (AbstractClass* pDest = dynamic_cast<FootClass*>(pTechno)->Destination)
+		if (AbstractClass* pDest = abstract_cast<FootClass*, true>(pTechno)->Destination)
 		{
 			CoordStruct destPos = pDest->GetCoords();
 			CellClass* pDestCell = MapClass::Instance->TryGetCellAt(destPos);
@@ -267,7 +267,7 @@ void JumpjetCarryall::OnUpdate()
 				CancelMission();
 				break;
 			}
-			FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+			FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 			if (pFoot->DistanceFrom(_pTargetCell) <= 16)
 			{
 				// 抵达目标上空，开始降落
@@ -300,7 +300,7 @@ void JumpjetCarryall::OnUpdate()
 			// 下降高度
 			int z = targetPos.Z;
 			int climb = 20;
-			FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+			FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 			JumpjetLocomotionClass* pJJ = dynamic_cast<JumpjetLocomotionClass*>(pFoot->Locomotor.get());
 			if (pJJ)
 			{

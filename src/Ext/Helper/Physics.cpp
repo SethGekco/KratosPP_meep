@@ -183,7 +183,7 @@ FallingError Falling(TechnoClass* pTechno, CoordStruct targetPos, int fallingDes
 		}
 		if (pTechno->WhatAmI() == AbstractType::Infantry)
 		{
-			dynamic_cast<InfantryClass*>(pTechno)->PlayAnim(Sequence::Paradrop);
+			abstract_cast<InfantryClass*, true>(pTechno)->PlayAnim(Sequence::Paradrop);
 		}
 		break;
 	}

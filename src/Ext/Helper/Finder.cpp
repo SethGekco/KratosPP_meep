@@ -197,7 +197,7 @@ std::vector<TechnoClass*> GetCellSpreadTechnos(CellStruct centerCell, CoordStruc
 			{
 			case AbstractType::Building:
 			{
-				BuildingClass* pBuilding = dynamic_cast<BuildingClass*>(pTechno);
+				BuildingClass* pBuilding = abstract_cast<BuildingClass*, true>(pTechno);
 				if (pBuilding->Type->InvisibleInGame) {
 					continue;
 				}
@@ -338,7 +338,7 @@ void FindAndAttachEffect(CoordStruct location, int damage, WarheadTypeClass* pWH
 	{
 		bool attachToSource = aeTypeData->AttachToSource;
 		AttachEffect* sourceAEM = nullptr;
-		if (attachToSource && !TryGetAEManager<TechnoExt>(dynamic_cast<TechnoClass*>(pAttacker), sourceAEM))
+		if (attachToSource && !TryGetAEManager<TechnoExt>(abstract_cast<TechnoClass*>(pAttacker), sourceAEM))
 		{
 			return;
 		}

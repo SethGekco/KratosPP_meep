@@ -94,7 +94,7 @@ bool PumpState::Jump(CoordStruct targetPos, bool isLobber, Sequence flySequence,
 		_flySequence = flySequence;
 		// 从占据的格子中移除自己
 		pTechno->UnmarkAllOccupationBits(sourcePos);
-		FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+		FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 		// 停止移动
 		ForceStopMoving(pFoot);
 		// 调整朝向飞行的方向
@@ -197,7 +197,7 @@ void PumpState::OnUpdate()
 			CoordStruct sourcePos = pTechno->GetCoords();
 			// 从占据的格子中移除自己
 			pTechno->UnmarkAllOccupationBits(sourcePos);
-			FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+			FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 			// 停止移动
 			ForceStopMoving(pFoot);
 			// 初速度削减重力，下一个坐标位置
@@ -240,7 +240,7 @@ void PumpState::OnUpdate()
 			MapClass::Instance->RevealArea2(&nextPos, pTechno->LastSightRange, pTechno->Owner, false, false, false, true, 1);
 			if (IsInfantry())
 			{
-				dynamic_cast<InfantryClass*>(pTechno)->PlayAnim(_flySequence);
+				abstract_cast<InfantryClass*, true>(pTechno)->PlayAnim(_flySequence);
 			}
 			switch (passError)
 			{

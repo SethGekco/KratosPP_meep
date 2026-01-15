@@ -204,7 +204,7 @@ DEFINE_HOOK(0x6F4222, TechnoClass_Init_PermaDisguise, 0x7)
 DEFINE_HOOK(0x7466D8, UnitClass_Set_Disguise, 0xA)
 {
 	GET(AbstractClass*, pTarget, ESI);
-	if (dynamic_cast<ObjectClass*>(pTarget)->IsDisguised())
+	if (abstract_cast<ObjectClass*, true>(pTarget)->IsDisguised())
 	{
 		// 伪装成目标单位的伪装
 		return 0x7466E6;
@@ -212,7 +212,7 @@ DEFINE_HOOK(0x7466D8, UnitClass_Set_Disguise, 0xA)
 	else if (pTarget->WhatAmI() == AbstractType::Unit)
 	{
 		// 我自己来
-		TechnoClass* pTargetTechno = dynamic_cast<TechnoClass*>(pTarget);
+		TechnoClass* pTargetTechno = abstract_cast<TechnoClass*, true>(pTarget);
 		GET(TechnoClass*, pTechno, EDI);
 		pTechno->Disguise = pTargetTechno->GetType();
 		R->EAX(reinterpret_cast<unsigned int>(pTarget->GetOwningHouse()));
@@ -658,7 +658,7 @@ DEFINE_HOOK(0x7388FD, UnitClass_ActionClick_Carryall, 0x5)
 	if (JumpjetCarryall* jjCarryall = GetScript<TechnoExt, JumpjetCarryall>(pTechno))
 	{
 		GET(TechnoClass*, pTarget, EDI);
-		if (FootClass* pTargetFoot = dynamic_cast<FootClass*>(pTarget))
+		if (FootClass* pTargetFoot = abstract_cast<FootClass*>(pTarget))
 		{
 			jjCarryall->ActionClick(action, pTargetFoot);
 		}

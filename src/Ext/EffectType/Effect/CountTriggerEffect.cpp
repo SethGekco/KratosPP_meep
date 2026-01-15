@@ -44,10 +44,10 @@ void CountTriggerEffect::Watch()
 						switch (entity.NumFrom)
 						{
 						case CountTriggerWho::SOURCE:
-							pFrom = dynamic_cast<ObjectClass*>(AE->pSource);
+							pFrom = abstract_cast<ObjectClass*>(AE->pSource);
 							break;
 						case CountTriggerWho::COUNTER:
-							pFrom = dynamic_cast<ObjectClass*>(counter->AE->pSource);
+							pFrom = abstract_cast<ObjectClass*>(counter->AE->pSource);
 							break;
 						}
 						if (pFrom && !IsDeadOrInvisible(pFrom))

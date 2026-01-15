@@ -84,7 +84,7 @@ bool TechnoStatus::ChangeTechnoTypeTo(TechnoTypeClass* pNewType)
 		Debug::Log("Warning: %s is not FootClass, conversion not allowed\n", pNewType->get_ID());
 		return false;
 	}
-	FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+	FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 
 	// Detach CLEG targeting
 	auto tempUsing = pFoot->TemporalImUsing;

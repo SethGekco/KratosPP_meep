@@ -790,7 +790,7 @@ void AttachEffect::AttachUploadAE()
 		ObjectClass* pPassenger = pTechno->Passengers.FirstPassenger;
 		do
 		{
-			CheckAndAttachUploadAE(dynamic_cast<TechnoClass*>(pPassenger));
+			CheckAndAttachUploadAE(abstract_cast<TechnoClass*>(pPassenger));
 		} while ((pPassenger = pPassenger->NextObject) != nullptr);
 	}
 }
@@ -1483,7 +1483,7 @@ void AttachEffect::OnUpdate()
 			if (!PowerOff && IsBuilding())
 			{
 				// 关闭当前建筑电源
-				PowerOff = !dynamic_cast<BuildingClass*>(pTechno)->HasPower;
+				PowerOff = !abstract_cast<BuildingClass*, true>(pTechno)->HasPower;
 			}
 		}
 

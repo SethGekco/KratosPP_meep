@@ -40,7 +40,7 @@ void JumpjetFacing::OnUpdate()
 	{
 		if (_JJNeedTurn)
 		{
-			FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+			FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 			// JJ变形为其他类型的单位后，不一定具有JJLoco
 			if (JumpjetLocomotionClass* jjLoco = dynamic_cast<JumpjetLocomotionClass*>(pFoot->Locomotor.get()))
 			{

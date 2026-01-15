@@ -46,7 +46,7 @@ void TechnoStatus::OnUpdate_DeployTo()
 		if (IsInfantry())
 		{
 			// 步兵序列为Deploy和Undeploy时，即是开始部署
-			Sequence sequence = dynamic_cast<InfantryClass*>(pTechno)->SequenceAnim;
+			Sequence sequence = abstract_cast<InfantryClass*, true>(pTechno)->SequenceAnim;
 			if (sequence == Sequence::Deploy)
 			{
 				DeployState = DeployState::Deploying;
@@ -63,7 +63,7 @@ void TechnoStatus::OnUpdate_DeployTo()
 			{
 				DeployState = DeployState::Deploying;
 				// 如果是IsSimpleDeploy， 在部署完成会设置Deployed，否则会设置为false
-				if (dynamic_cast<UnitClass*>(pTechno)->Deployed)
+				if (abstract_cast<UnitClass*, true>(pTechno)->Deployed)
 				{
 					DeployState = DeployState::Undeploying;
 				}
@@ -74,7 +74,7 @@ void TechnoStatus::OnUpdate_DeployTo()
 		if (IsInfantry())
 		{
 			// 步兵序列为Deployed时，即是部署完成
-			Sequence sequence = dynamic_cast<InfantryClass*>(pTechno)->SequenceAnim;
+			Sequence sequence = abstract_cast<InfantryClass*, true>(pTechno)->SequenceAnim;
 			if (sequence == Sequence::Deployed)
 			{
 				DeployState = DeployState::Deployed;
@@ -83,7 +83,7 @@ void TechnoStatus::OnUpdate_DeployTo()
 		else if (IsUnit())
 		{
 			// 如果是IsSimpleDeploy， 在部署完成会设置Deployed，否则会设置为false
-			if (dynamic_cast<UnitClass*>(pTechno)->Deployed)
+			if (abstract_cast<UnitClass*, true>(pTechno)->Deployed)
 			{
 				DeployState = DeployState::Deployed;
 				break;
@@ -99,7 +99,7 @@ void TechnoStatus::OnUpdate_DeployTo()
 		if (IsInfantry())
 		{
 			// 步兵序列不为Undeploy时，即是部署完成
-			Sequence sequence = dynamic_cast<InfantryClass*>(pTechno)->SequenceAnim;
+			Sequence sequence = abstract_cast<InfantryClass*, true>(pTechno)->SequenceAnim;
 			if (sequence != Sequence::Undeploy)
 			{
 				DeployState = DeployState::Undeployed;
@@ -108,7 +108,7 @@ void TechnoStatus::OnUpdate_DeployTo()
 		else if (IsUnit())
 		{
 			// 如果是IsSimpleDeploy， 在部署完成会设置Deployed，否则会设置为false
-			if (dynamic_cast<UnitClass*>(pTechno)->Deployed)
+			if (abstract_cast<UnitClass*, true>(pTechno)->Deployed)
 			{
 				DeployState = DeployState::Undeployed;
 				break;

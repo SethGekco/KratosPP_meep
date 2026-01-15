@@ -50,7 +50,7 @@ void AircraftGuard::StartAreaGuard()
 	{
 		// 设定新的航点
 		CoordStruct dest = CoordStruct::Empty;
-		FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+		FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 		AbstractClass* pDest = pFoot->Destination;
 		if (pDest)
 		{
@@ -74,7 +74,7 @@ void AircraftGuard::StartAreaGuard()
 bool AircraftGuard::SetupDestination()
 {
 	CoordStruct dest = CoordStruct::Empty;
-	dynamic_cast<FootClass*>(pTechno)->Locomotor->Destination(&dest);
+	abstract_cast<FootClass*, true>(pTechno)->Locomotor->Destination(&dest);
 	return SetupDestination(dest);
 }
 
@@ -262,7 +262,7 @@ void AircraftGuard::OnUpdate()
 	if (!IsDeadOrInvisible(pTechno))
 	{
 		AircraftGuardData* data = GetAircraftGuardData();
-		FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+		FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 		ILocomotion* loco = pFoot->Locomotor.get();
 		switch (State)
 		{

@@ -22,7 +22,7 @@ void TechnoStatus::BlackHoleCancel()
 {
 	if (CaptureByBlackHole && !IsBuilding() && !IsDeadOrInvisible(pTechno))
 	{
-		FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+		FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 		pFoot->Locomotor->Unlock();
 		// 恢复可控制
 		if (_lostControl)
@@ -117,7 +117,7 @@ void TechnoStatus::OnUpdate_BlackHole()
 				// 移动位置
 				// 从占据的格子中移除自己
 				pTechno->UnmarkAllOccupationBits(location);
-				FootClass* pFoot = dynamic_cast<FootClass*>(pTechno);
+				FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
 				// 停止移动
 				ForceStopMoving(pFoot);
 				// 计算下一个坐标点
@@ -170,7 +170,7 @@ void TechnoStatus::OnUpdate_BlackHole()
 				// 设置动作
 				if (_blackHoleData.AllowCrawl && IsInfantry())
 				{
-					dynamic_cast<InfantryClass*>(pTechno)->PlayAnim(Sequence::Crawl);
+					abstract_cast<InfantryClass*, true>(pTechno)->PlayAnim(Sequence::Crawl);
 				}
 				// 设置翻滚
 				if (_blackHoleData.AllowRotateUnit)

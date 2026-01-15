@@ -29,7 +29,7 @@ void TechnoStatus::HumanCannon(CoordStruct sourcePos, CoordStruct targetPos, int
 		pPassenger->Unlimbo(sourcePos, ToDirType(facing));
 		--Unsorted::IKnowWhatImDoing;
 		// 人间大炮二级准备
-		if (TechnoStatus* status = GetStatus<TechnoExt, TechnoStatus>(dynamic_cast<TechnoClass*>(pPassenger)))
+		if (TechnoStatus* status = GetStatus<TechnoExt, TechnoStatus>(abstract_cast<TechnoClass*, true>(pPassenger)))
 		{
 			// 人间大炮发射
 			targetPos += CoordStruct{ 0, 0, height };

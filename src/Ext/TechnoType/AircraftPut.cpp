@@ -43,7 +43,7 @@ void AircraftPut::Awake()
 void AircraftPut::OnPut(CoordStruct* pCoord, DirType dirType)
 {
 	// 检查停机坪数量
-	if (dynamic_cast<AircraftClass*>(pTechno)->Type->AirportBound)
+	if (abstract_cast<AircraftClass*, true>(pTechno)->Type->AirportBound)
 	{
 		HouseClass* pHouse = pTechno->Owner;
 		if (pHouse->AirportDocks <= 0 || pHouse->AirportDocks < CountAircraft())

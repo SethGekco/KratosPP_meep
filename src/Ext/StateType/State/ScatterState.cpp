@@ -12,7 +12,7 @@ void ScatterState::OnUpdate()
 		_panic = Data.Panic;
 		if (_panic && IsInfantry())
 		{
-			InfantryClass* pInfantry = dynamic_cast<InfantryClass*>(pTechno);
+			InfantryClass* pInfantry = abstract_cast<InfantryClass*, true>(pTechno);
 			if (pInfantry->PanicDurationLeft <= 200)
 			{
 				pInfantry->PanicDurationLeft = 300;
