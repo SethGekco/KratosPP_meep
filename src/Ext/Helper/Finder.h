@@ -210,11 +210,11 @@ std::vector<TechnoClass*> GetCellSpreadTechnos(CoordStruct location, double spre
 	HouseClass* pHouse = nullptr,
 	bool owner = true, bool allied = true, bool enemies = true, bool civilian = true);
 
-void FindTechnoOnMark(std::function<void(TechnoClass*, AttachEffect*)> func,
+void FindTechnoOnMark(std::function<bool(TechnoClass*, AttachEffect*)> func,
 	CoordStruct location, double maxSpread, double minSpread, bool fullAirspace,
 	HouseClass* pHouse, FilterData data, ObjectClass* exclude);
 
-void FindBulletOnMark(std::function<void(BulletClass*, AttachEffect*)> func,
+void FindBulletOnMark(std::function<bool(BulletClass*, AttachEffect*)> func,
 	CoordStruct location, double maxSpread, double minSpread, bool fullAirspace,
 	HouseClass* pHouse, FilterData data, ObjectClass* exclude);
 

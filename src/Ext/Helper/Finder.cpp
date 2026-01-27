@@ -234,7 +234,7 @@ std::vector<TechnoClass*> GetCellSpreadTechnos(CoordStruct location, double spre
 		owner, allied, enemies, civilian);
 }
 
-void FindTechnoOnMark(std::function<void(TechnoClass*, AttachEffect*)> func,
+void FindTechnoOnMark(std::function<bool(TechnoClass*, AttachEffect*)> func,
 	CoordStruct location, double maxSpread, double minSpread, bool fullAirspace,
 	HouseClass* pHouse, FilterData data, ObjectClass* exclude)
 {
@@ -305,13 +305,16 @@ void FindTechnoOnMark(std::function<void(TechnoClass*, AttachEffect*)> func,
 		if (data.CanAffectType(pTarget) && TryGetAEManager<TechnoExt>(pTarget, aeManager) && data.OnMark(aeManager->GetMarks()))
 		{
 			// 执行动作
-			func(pTarget, aeManager);
+			if (func(pTarget, aeManager))
+			{
+				break;
+			}
 		}
 	}
 }
 
 
-void FindBulletOnMark(std::function<void(BulletClass*, AttachEffect*)> func,
+void FindBulletOnMark(std::function<bool(BulletClass*, AttachEffect*)> func,
 	CoordStruct location, double maxSpread, double minSpread, bool fullAirspace,
 	HouseClass* pHouse, FilterData data, ObjectClass* exclude)
 {
@@ -325,7 +328,10 @@ void FindBulletOnMark(std::function<void(BulletClass*, AttachEffect*)> func,
 		AttachEffect* aeManager = nullptr;
 		if (TryGetAEManager<BulletExt>(pTarget, aeManager))
 		{
-			func(pTarget, aeManager);
+			if (func(pTarget, aeManager))
+			{
+				break;
+			}
 		}
 	}
 }

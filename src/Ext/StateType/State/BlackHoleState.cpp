@@ -85,6 +85,7 @@ void BlackHoleState::StartCapture()
 				{
 					status->BlackHoleCapture(pObject, Data);
 				}
+				return false;
 				}, location, data.Range, 0, data.FullAirspace, pHouse, Data, pObject);
 		}
 		if (Data.AffectBullet)
@@ -94,6 +95,7 @@ void BlackHoleState::StartCapture()
 				{
 					status->BlackHoleCapture(pObject, Data);
 				}
+				return false;
 				}, location, data.Range, 0, data.FullAirspace, pHouse, Data, pObject);
 		}
 	}
