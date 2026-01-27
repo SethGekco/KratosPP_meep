@@ -18,8 +18,9 @@ bool CountTriggerEffect::CanActive(double num, Point2D range)
 
 void CountTriggerEffect::Watch()
 {
-	// 向AE管理器查找计数器
-	CounterEffect* counter = AE->AEManager->Counters[Data->Watch];
+	// 向AE管理器查找计数器，不能使用AE->AEManager->Counters[Data->Watch]，会导致插入一个空指针
+	auto it = AE->AEManager->Counters.find(Data->Watch);
+	CounterEffect* counter = (it != AE->AEManager->Counters.end()) ? it->second : nullptr;
 	if (counter && counter->IsAlive())
 	{
 		int action_idx = 0;
