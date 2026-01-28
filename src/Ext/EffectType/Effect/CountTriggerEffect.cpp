@@ -29,12 +29,6 @@ void CountTriggerEffect::Watch()
 			action_idx++;
 			if (CanActive(counter->CountNum, entity.Range))
 			{
-				// 移除计数器
-				if (entity.RemoveCounter)
-				{
-					counter->RemoveCounter();
-					return;
-				}
 				// 操作计数
 				if (entity.Num != 0)
 				{
@@ -165,6 +159,11 @@ void CountTriggerEffect::Watch()
 							aeManager->DetachByMarks(entity.RemoveEffectsWithMarks, entity.RemoveEffectsSkipNext);
 						}
 					}
+				}
+				// 移除计数器
+				if (entity.RemoveCounter)
+				{
+					counter->RemoveCounter();
 				}
 				if (entity.TriggeredTimes > 0)
 				{
