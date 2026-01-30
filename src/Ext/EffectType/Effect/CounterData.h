@@ -158,23 +158,36 @@ public:
 		ClearIfGetNone(NotReactionWarheads);
 	}
 
-	bool WarheadOnMark(std::string warheadId)
+	bool WarheadOnMark(const char* warheadId)
 	{
 		bool mark = true;
 		bool hasWhiteList = !OnlyReactionWarheads.empty();
 		bool hasBlackList = !NotReactionWarheads.empty();
 		if (hasWhiteList)
 		{
-			auto it = std::find(OnlyReactionWarheads.begin(), OnlyReactionWarheads.end(), warheadId);
-			mark = it != OnlyReactionWarheads.end();
+			for (const std::string id : OnlyReactionWarheads)
+			{
+				if (id == warheadId)
+				{
+					mark = true;
+					break;
+				}
+			}
 		}
-		if (!mark && hasBlackList)
+		if ((!mark || !hasWhiteList) && hasBlackList)
 		{
-			auto it = std::find(NotReactionWarheads.begin(), NotReactionWarheads.end(), warheadId);
-			mark = it == NotReactionWarheads.end();
+			for (const std::string id : NotReactionWarheads)
+			{
+				if (id == warheadId)
+				{
+					mark = false;
+					break;
+				}
+			}
 		}
 		return mark;
 	}
+
 #pragma region save/load
 	template <typename T>
 	bool Serialize(T& stream)
