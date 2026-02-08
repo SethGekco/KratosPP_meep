@@ -160,9 +160,9 @@ public:
 
 	bool WarheadOnMark(const char* warheadId)
 	{
-		bool mark = true;
 		bool hasWhiteList = !OnlyReactionWarheads.empty();
 		bool hasBlackList = !NotReactionWarheads.empty();
+		bool mark = !hasWhiteList;
 		if (hasWhiteList)
 		{
 			for (const std::string id : OnlyReactionWarheads)
