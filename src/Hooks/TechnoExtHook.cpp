@@ -1369,3 +1369,23 @@ DEFINE_HOOK(0x6622E0, RocketLocomotionClass_Update_Freezing, 0x6)
 	}
 	return 0;
 }
+
+DEFINE_HOOK(0x739971, UnitClass_TryToDeploy_TransferAE, 0x6)
+{
+	GET(UnitClass*, pUnit, EBP);
+	GET(BuildingClass*, pBld, EBX);
+
+	AttachEffect::TransferAttachedEffects(pUnit, pBld);
+
+	return 0;
+}
+
+DEFINE_HOOK(0x44A04C, BuildingClass_Selling_TransferAE, 0x6)
+{
+	GET(BuildingClass*, pBld, EBP);
+	GET(UnitClass*, pUnit, EBX);
+
+	AttachEffect::TransferAttachedEffects(pBld, pUnit);
+
+	return 0;
+}
