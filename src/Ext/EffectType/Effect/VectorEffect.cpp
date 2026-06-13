@@ -1,6 +1,5 @@
-#include "VectorEffect.h"
+﻿#include "VectorEffect.h"
 
-#include <fstream>
 #include <Ext/Helper/Scripts.h>
 #include <Ext/Helper/Status.h>
 #include <Ext/Helper/Physics.h>
@@ -10,25 +9,6 @@
 #include <Ext/ObjectType/AttachEffect.h>
 #include <Ext/EffectType/AttachEffectScript.h>
 #include <Ext/BulletType/BulletStatus.h>
-
-static bool HasAnyActiveVectorEffect(GameObject* pObj)
-{
-	bool found = false;
-	if (pObj)
-	{
-		pObj->Foreach([&found](Component* c)
-		{
-			if (auto* ve = dynamic_cast<VectorEffect*>(c))
-			{
-				if (ve->IsActive())
-				{
-					found = true;
-				}
-			}
-		});
-	}
-	return found;
-}
 
 void VectorEffect::OnStart()
 {
@@ -41,32 +21,6 @@ void VectorEffect::OnStart()
 	_initialLocation = pObject->GetCoords();
 	_elapsedFrames = 0;
 	_moveFrame = 0;
-	_currentAngle = 0;
-	_currentWaveFrequency = Data->WaveFrequency;
-	_currentSpinRate = Data->SpinRate;
-	_currentTurretSpinRate = Data->TurretSpinRate;
-
-	if (AE && AE->AEManager)
-	{
-		if (Data->Force && pBullet)
-		{
-			if (BulletStatus* status = GetStatus<BulletExt, BulletStatus>(pBullet))
-			{
-				status->VectorForced = true;
-			}
-		}
-	}
-
-	{
-		std::ofstream f("I:\\kratosAI\\vector_debug.log", std::ios::app);
-		f << "OnStart: id=" << pObject->GetType()->ID
-			<< " Force=" << Data->Force << " Freeze=" << Data->Freeze
-			<< " Speed=" << _currentSpeed
-			<< " Pos=(" << _initialLocation.X << "," << _initialLocation.Y << "," << _initialLocation.Z << ")"
-			<< " Vel=(" << pBullet->Velocity.X << "," << pBullet->Velocity.Y << "," << pBullet->Velocity.Z << ")"
-			<< "\n";
-		f.close();
-	}
 
 	if (Data->TargetRandF.X != 0 || Data->TargetRandF.Y != 0
 		|| Data->TargetRandL.X != 0 || Data->TargetRandL.Y != 0
@@ -77,22 +31,8 @@ void VectorEffect::OnStart()
 		_randomTargetOffset.Z = Random::RandomRanged(Data->TargetRandH.X, Data->TargetRandH.Y);
 	}
 
-	if (pTechno && !IsAircraft())
-	{
-		CoordStruct pos = pTechno->GetCoords();
-		pTechno->UpdatePlacement(PlacementType::Remove);
-		pTechno->UnmarkAllOccupationBits(pos);
-		FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
-		if (pFoot)
-		{
-			ForceStopMoving(pFoot);
-		}
-	}
-
 	if (pTechno)
 	{
-		_initialFacing = pTechno->PrimaryFacing.Current();
-
 		if (Data->StartSpeed > 0)
 		{
 			_currentSpeed = Data->StartSpeed;
@@ -116,9 +56,6 @@ void VectorEffect::OnStart()
 	}
 	else if (pBullet)
 	{
-		// 从抛射体 XY 速度分量计算面朝方向（North=0, East=16384, South=32768, West=49152）
-		_initialFacing = DirStruct(std::atan2(pBullet->Velocity.X, pBullet->Velocity.Y));
-
 		if (Data->StartSpeed > 0)
 		{
 			_currentSpeed = Data->StartSpeed;
@@ -201,54 +138,123 @@ void VectorEffect::OnStart()
 #endif
 }
 
-void VectorEffect::End(CoordStruct location)
+VectorResult VectorEffect::GetVectorResult()
 {
-	if (Data->Force && pBullet)
+	VectorResult result;
+	if (Data->Freeze)
 	{
-		if (BulletStatus* status = GetStatus<BulletExt, BulletStatus>(pBullet))
+		result.Freeze = true;
+		// 取第一个 Freeze VectorEffect 的初始位置作为冻结锚点
+		if (result.FrozenPos.IsEmpty())
 		{
-			status->VectorForced = false;
+			result.FrozenPos = _initialLocation;
 		}
 	}
-
-	if (pObject && !HasAnyActiveVectorEffect(dynamic_cast<GameObject*>(pObject)))
+	else
 	{
-		if (pTechno && !IsBuilding() && !IsDeadOrInvisible(pTechno))
+		CoordStruct currentPos = pObject->GetCoords();
+		CoordStruct originPos = currentPos; // 默认原点为当前位置，后续根据 Origin 类型调整
+		switch (Data->Origin)
 		{
-			FootClass* pFoot = abstract_cast<FootClass*, true>(pTechno);
-			if (pFoot)
+		case VectorData::VectorOrigin::World:
+		case VectorData::VectorOrigin::Realtime:
+			break;
+		case VectorData::VectorOrigin::Target:
+			originPos = Data->OriginNoUpdate ? _initialOriginPos : _initialTarget;
+			break;
+		case VectorData::VectorOrigin::Launcher:
+			if (Data->OriginNoUpdate)
+				originPos = _initialOriginPos;
+			else if (_pLauncher && !IsDeadOrInvisible(_pLauncher))
+				originPos = _pLauncher->GetCoords();
+			break;
+		case VectorData::VectorOrigin::Source:
+			if (Data->OriginNoUpdate)
+				originPos = _initialOriginPos;
+			else if (_pSource && !IsDeadOrInvisible(_pSource))
+				originPos = _pSource->GetCoords();
+			break;
+		case VectorData::VectorOrigin::Self:
+			originPos = _initialLocation;
+			break;
+		case VectorData::VectorOrigin::FLH:
+			originPos = _initialOriginPos;
+			break;
+		default:
+			break;
+		}
+
+		CoordStruct frameTarget;
+		frameTarget.X = originPos.X + Data->TargetFLH.X + _randomTargetOffset.X;
+		frameTarget.Y = originPos.Y + Data->TargetFLH.Y + _randomTargetOffset.Y;
+		frameTarget.Z = originPos.Z + Data->TargetFLH.Z + _randomTargetOffset.Z;
+
+		int speed = _currentSpeed;
+
+		// MoveTo FLH 位移
+		CoordStruct moveFlh{};
+		moveFlh.X = Data->MoveTo.X + static_cast<int>(Data->GrowRate.X * _moveFrame);
+		moveFlh.Y = Data->MoveTo.Y + static_cast<int>(Data->GrowRate.Y * _moveFrame);
+		moveFlh.Z = Data->MoveTo.Z + static_cast<int>(Data->GrowRate.Z * _moveFrame);
+
+		// FLH → 世界坐标（只用速度XY分量算朝向，Z轴始终垂直地面）
+		CoordStruct moveDisp;
+		if (Data->Origin != VectorData::VectorOrigin::World && pBullet)
+		{
+			double vx = pBullet->Velocity.X;
+			double vy = pBullet->Velocity.Y;
+			double len = std::sqrt(vx * vx + vy * vy);
+			if (len > 1e-6)
 			{
-				pFoot->Locomotor->Unlock();
+				double fwdX = vx / len;
+				double fwdY = vy / len;
+				moveDisp.X = static_cast<int>(moveFlh.X * fwdX - moveFlh.Y * fwdY);
+				moveDisp.Y = static_cast<int>(moveFlh.X * fwdY + moveFlh.Y * fwdX);
+				moveDisp.Z = moveFlh.Z;
 			}
-			CoordStruct pos = pTechno->GetCoords();
-			CellClass* pCell = MapClass::Instance->TryGetCellAt(pos);
-			int groundZ = pCell ? pCell->GetCoordsWithBridge().Z : 0;
-			if (pos.Z > groundZ)
+			else
 			{
-				FallingExceptAircraft(pTechno, 0, false);
+				moveDisp = moveFlh;
 			}
 		}
+		else
+		{
+			moveDisp = moveFlh;
+		}
+		// 朝目标飞行 + MoveTo 偏移
+		CoordStruct nextPos;
+		if (!frameTarget.IsEmpty() && (Data->TargetFLH.X != 0 || Data->TargetFLH.Y != 0 || Data->TargetFLH.Z != 0))
+		{
+			CoordStruct dirVec;
+			dirVec.X = frameTarget.X - currentPos.X;
+			dirVec.Y = frameTarget.Y - currentPos.Y;
+			dirVec.Z = frameTarget.Z - currentPos.Z;
+			double dirLen = std::sqrt(static_cast<double>(dirVec.X * dirVec.X + dirVec.Y * dirVec.Y + dirVec.Z * dirVec.Z));
+			if (dirLen > 1e-6)
+			{
+				nextPos.X = currentPos.X + static_cast<int>(dirVec.X / dirLen * speed) + moveDisp.X;
+				nextPos.Y = currentPos.Y + static_cast<int>(dirVec.Y / dirLen * speed) + moveDisp.Y;
+				nextPos.Z = currentPos.Z + static_cast<int>(dirVec.Z / dirLen * speed) + moveDisp.Z;
+			}
+			else
+			{
+				nextPos.X = currentPos.X + moveDisp.X;
+				nextPos.Y = currentPos.Y + moveDisp.Y;
+				nextPos.Z = currentPos.Z + moveDisp.Z;
+			}
+		}
+		else
+		{
+			nextPos.X = currentPos.X + moveDisp.X;
+			nextPos.Y = currentPos.Y + moveDisp.Y;
+			nextPos.Z = currentPos.Z + moveDisp.Z;
+		}
+
+		// 合并偏移量获得新位置
+		result.MoveDisp.X += nextPos.X - currentPos.X;
+		result.MoveDisp.Y += nextPos.Y - currentPos.Y;
+		result.MoveDisp.Z += nextPos.Z - currentPos.Z;
 	}
 
-	if (pBullet && !IsDeadOrInvisible(pBullet))
-	{
-		pBullet->SourceCoords = pBullet->GetCoords();
-		RecalculateBulletVelocity(pBullet);
-	}
-
-	EffectScript::End(location);
-}
-
-void VectorEffect::OnPause()
-{
-	if (pBullet && !IsDeadOrInvisible(pBullet))
-	{
-		pBullet->SourceCoords = pBullet->GetCoords();
-		RecalculateBulletVelocity(pBullet);
-	}
-}
-
-void VectorEffect::OnRecover()
-{
-	_initialLocation = pObject->GetCoords();
+	return result;
 }
