@@ -448,7 +448,7 @@ DEFINE_HOOK(0x4184FC, AircraftClass_Mission_Attack_CheckROF, 0x6)
 }
 
 // 飞机在状态4时，发射武器后，没有进入5，而是直接检查弹药状态
-DEFINE_HOOK(0x418506, AircraftClass_Mission_Attack_FireDone, 0x5)
+DEFINE_HOOK(0x418506, AircraftClass_Mission_Attack_FireDone, 0x6)
 {
 	GET(AircraftClass*, pAir, ESI);
 	AircraftHoverTemp::Aircraft.erase(pAir);
