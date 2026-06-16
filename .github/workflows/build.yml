@@ -20,6 +20,11 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Install ATL component
+        shell: cmd
+        run: |
+          "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify --installPath "C:\Program Files\Microsoft Visual Studio\18\Enterprise" --add Microsoft.VisualStudio.Component.VC.ATL.Spectre --quiet --norestart --nocache
+
       - name: Build
         run: msbuild Kratos.sln /p:Configuration=Release /p:Platform=x86
 
