@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Checkout repository
@@ -17,13 +17,16 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Find ATL headers
-        shell: pwsh
-        run: |
-          Get-ChildItem "C:\Program Files\Microsoft Visual Studio" -Recurse -Filter "atlbase.h" -ErrorAction SilentlyContinue | Select-Object FullName
-
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
+
+      - name: Install ATL
+        shell: cmd
+        run: |
+          "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify ^
+            --installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise" ^
+            --add Microsoft.VisualStudio.Component.VC.ATL ^
+            --quiet --norestart --force
 
       - name: Build
         run: msbuild Kratos.sln /p:Configuration=Release /p:Platform=x86
