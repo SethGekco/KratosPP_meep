@@ -13,6 +13,10 @@ public:
 	bool Enable = false;
 
 	bool Dynamic = false;
+	// When true, this effect will not activate on units that were released
+	// by another Host or GiftBox effect (i.e. spawned, not factory-built).
+	bool OnlyBuilt = false;
+
 	std::vector<std::string> Gifts;
 	std::vector<int> Nums;
 	std::vector<double> Chances;

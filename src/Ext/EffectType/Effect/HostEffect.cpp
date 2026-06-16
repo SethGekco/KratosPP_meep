@@ -2,6 +2,8 @@
 
 #include <Ext/Helper/MathEx.h>
 #include <Ext/Helper/Gift.h>
+#include <Ext/TechnoType/TechnoStatus.h>
+#include <Extension/TechnoExt.h>
 
 void HostEffect::OnStart()
 {
