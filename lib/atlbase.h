@@ -1,2 +1,5 @@
-// Stub atlbase.h - ATL types used by YRpp are already provided by windows.h
+
+// Stub atlbase.h - pulls in the COM interfaces ATL would normally provide
 #pragma once
+#include <windows.h>
+#include <ocidl.h>
