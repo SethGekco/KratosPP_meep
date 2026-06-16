@@ -17,14 +17,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Add ATL to Visual Studio
+      - name: Find ATL headers
         shell: pwsh
         run: |
-          $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
-          & $installer modify --installPath "C:\Program Files\Microsoft Visual Studio\18\Enterprise" `
-            --add Microsoft.VisualStudio.Component.VC.ATL `
-            --quiet --norestart --force
-          Start-Sleep -Seconds 30
+          Get-ChildItem "C:\Program Files\Microsoft Visual Studio" -Recurse -Filter "atlbase.h" -ErrorAction SilentlyContinue | Select-Object FullName
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
