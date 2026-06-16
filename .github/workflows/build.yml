@@ -21,7 +21,7 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Build
-        run: msbuild Kratos.sln /p:Configuration=Release /p:Platform=Win32
+        run: msbuild Kratos.sln /p:Configuration=Release /p:Platform=x86
 
       - name: Upload DLL artifact
         uses: actions/upload-artifact@v4
