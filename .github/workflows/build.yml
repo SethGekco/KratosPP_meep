@@ -34,7 +34,7 @@ jobs:
           Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\Enterprise" -Recurse -Filter "atls.lib" -ErrorAction SilentlyContinue | Select-Object FullName
 
       - name: Build
-        run: msbuild Kratos.sln /p:Configuration=Release /p:Platform=x86 "/p:IgnoreSpecificDefaultLibraries=atls.lib"
+        run: msbuild Kratos.sln /p:Configuration=Release /p:Platform=x86 "/p:AdditionalLibraryDirectories=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\atlmfc\lib\x86"
 
       - name: Upload DLL artifact
         uses: actions/upload-artifact@v4
