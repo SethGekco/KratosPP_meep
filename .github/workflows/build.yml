@@ -18,9 +18,12 @@ jobs:
           submodules: recursive
 
       - name: Install ATL
-        shell: pwsh
+        shell: cmd
         run: |
-          choco install visualstudio2022-workload-nativedesktop --package-parameters "--add Microsoft.VisualStudio.Component.VC.ATL" --no-progress -y
+          for /f "tokens=*" %%i in ('"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath') do set VS_PATH=%%i
+          echo VS Path: %VS_PATH%
+          "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vs_installer.exe" modify --installPath "%VS_PATH%" --add Microsoft.VisualStudio.Component.VC.ATL --quiet --norestart --force
+          ping -n 61 127.0.0.1 > nul
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
