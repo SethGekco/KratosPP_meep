@@ -1,4 +1,5 @@
-cd ~/KratosPP_meep
-git add lib/atlbase.h
-git commit -m "Suppress atls.lib via pragma in stub"
-git push
+// Stub atlbase.h
+#pragma once
+#include <windows.h>
+#include <ocidl.h>
+#pragma comment(linker, "/NODEFAULTLIB:atls.lib")
