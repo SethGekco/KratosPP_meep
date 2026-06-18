@@ -1,5 +1,4 @@
-
-// Stub atlbase.h - pulls in the COM interfaces ATL would normally provide
-#pragma once
-#include <windows.h>
-#include <ocidl.h>
+cd ~/KratosPP_meep
+git add lib/atlbase.h
+git commit -m "Suppress atls.lib via pragma in stub"
+git push
