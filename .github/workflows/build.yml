@@ -47,4 +47,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Kratos
-          path: output/ Release/Kratos.dll
+          path: output/Release/Kratos.dll
