@@ -41,7 +41,7 @@ jobs:
           Copy-Item $src $dst -Force
 
       - name: Build
-        run: msbuild Kratos.sln /p:Configuration=Release /p:Platform=x86 "/p:AdditionalLibraryDirectories=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\atlmfc\lib\x86"
+        run: msbuild Kratos.sln /p:Configuration=Release /p:Platform=x86 /p:PostBuildEventUseInBuild=false
 
       - name: Upload DLL artifact
         uses: actions/upload-artifact@v4
