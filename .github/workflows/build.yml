@@ -33,6 +33,13 @@ jobs:
         run: |
           Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\Enterprise" -Recurse -Filter "atls.lib" -ErrorAction SilentlyContinue | Select-Object FullName
 
+      - name: Copy atls.lib to linker path
+        shell: pwsh
+        run: |
+          $src = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\atlmfc\lib\x86\atls.lib"
+          $dst = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.29.30133\lib\x86\atls.lib"
+          Copy-Item $src $dst -Force
+
       - name: Build
         run: msbuild Kratos.sln /p:Configuration=Release /p:Platform=x86 "/p:AdditionalLibraryDirectories=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\atlmfc\lib\x86"
 
