@@ -1,5 +1,5 @@
-#include <Ext/Helper/Scripts.h>
 ﻿#include "HostEffect.h"
+#include <Ext/Helper/Scripts.h>
 
 #include <Ext/Helper/MathEx.h>
 #include <Ext/Helper/Gift.h>
