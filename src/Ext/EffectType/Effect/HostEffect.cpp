@@ -1,4 +1,4 @@
-#include <Ext/Helper/Status.h>
+#include <Ext/Helper/Scripts.h>
 ﻿#include "HostEffect.h"
 
 #include <Ext/Helper/MathEx.h>
