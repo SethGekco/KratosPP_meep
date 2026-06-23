@@ -157,7 +157,6 @@ public:
 		MyStandData = {};
 		pMyMaster = nullptr;
 		MyMasterIsSpawned = false;
-		IsGiftSpawned = false;
 		MyMasterIsAnim = false;
 		StandIsMoving = false;
 
