@@ -157,6 +157,7 @@ public:
 		MyStandData = {};
 		pMyMaster = nullptr;
 		MyMasterIsSpawned = false;
+		IsGiftSpawned = false;
 		MyMasterIsAnim = false;
 		StandIsMoving = false;
 
@@ -399,6 +400,8 @@ public:
 	StandData MyStandData{};
 	TechnoClass* pMyMaster = nullptr;
 	bool MyMasterIsSpawned = false;
+		IsGiftSpawned = false;
+	bool IsGiftSpawned = false;
 	bool MyMasterIsAnim = false;
 	bool StandIsMoving = false;
 

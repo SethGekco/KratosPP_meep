@@ -224,6 +224,7 @@ void ReleaseGifts(std::vector<std::string> gifts, GiftBoxEntity data, BoxStateCa
 				)
 			{
 				TechnoStatus* pGiftStatus = GetStatus<TechnoExt, TechnoStatus>(pGift);
+				if (pGiftStatus) { pGiftStatus->IsGiftSpawned = true; }
 				if (boxState.SameDir)
 				{
 					// 同步朝向

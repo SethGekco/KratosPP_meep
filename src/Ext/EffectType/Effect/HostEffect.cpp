@@ -55,6 +55,17 @@ void HostEffect::OnUpdate()
 	{
 		return;
 	}
+	// OnlyBuilt guard: skip activation on gift-spawned copies
+	if (Data->Data.OnlyBuilt && pTechno)
+	{
+		TechnoStatus* pStatus = GetStatus<TechnoExt, TechnoStatus>(pTechno);
+		if (pStatus && pStatus->IsGiftSpawned)
+		{
+			Deactivate();
+			AE->TimeToDie();
+			return;
+		}
+	}
 	if (Data->DeactiveWhenCivilian && IsCivilian(pHouse))
 	{
 		return;
