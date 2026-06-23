@@ -400,7 +400,6 @@ public:
 	StandData MyStandData{};
 	TechnoClass* pMyMaster = nullptr;
 	bool MyMasterIsSpawned = false;
-		IsGiftSpawned = false;
 	bool IsGiftSpawned = false;
 	bool MyMasterIsAnim = false;
 	bool StandIsMoving = false;
