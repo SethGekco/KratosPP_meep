@@ -38,7 +38,7 @@ public:
 
 		Delay = reader->Get(title + "Delay", Delay);
 		RandomDelay = reader->Get(title + "RandomDelay", RandomDelay);
-
+                OnlyBuilt = reader->Get(title + "OnlyBuilt", OnlyBuilt);
 		Enable = !Gifts.empty() || Dynamic;
 	}
 
@@ -56,7 +56,8 @@ public:
 			.Process(this->RandomWeights)
 			.Process(this->Delay)
 			.Process(this->RandomDelay)
-			.Success();
+			.Process(this->OnlyBuilt)
+                        .Success();
 	};
 
 	virtual bool Load(ExStreamReader& stream, bool registerForChange)
