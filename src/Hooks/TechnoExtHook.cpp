@@ -178,7 +178,7 @@ DEFINE_HOOK(0x414CF2, TechnoClass_WarpUpdate, 0x6)		 // Aircraft
 	return 0;
 }
 
-DEFINE_HOOK(0x71A88D, TemporalClass_Update, 0x0)
+DEFINE_HOOK(0x71A88D, TemporalClass_Update, 0x5)
 {
 	GET(TemporalClass*, pTemporal, ESI);
 
